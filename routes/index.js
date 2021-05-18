@@ -4,7 +4,9 @@ var express = require('express');
 var axios = require('axios');
 var router = express.Router();
 
-var txnId;
+router.get('/', function(req, res, next) {
+  res.send("Welcome to the API")
+});
 
 /* GET home page. */
 router.get('/generateOTP', function(req, res, next) {
