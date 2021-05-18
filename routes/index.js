@@ -18,7 +18,8 @@ router.get('/generateOTP', function(req, res, next) {
     headers: { 
       'Content-Type': 'application/json',
     },
-    data : data
+    data : data,
+    withCredentials: false
   };
 
   axios(config)
