@@ -1,7 +1,36 @@
 var express = require('express');
 var router = express.Router();
+const TelegramBot = require('node-telegram-bot-api');
 var request = require('request');
 var crypto = require('crypto');
+
+// Telegram Token
+// 1808569609:AAFd-x__o0pNFjMv20QsW9VCosDLfg_H5YY
+const telegramToken = '1808569609:AAFd-x__o0pNFjMv20QsW9VCosDLfg_H5YY';
+
+// Create a bot that uses 'polling' to fetch new updates
+const bot = new TelegramBot(telegramToken);
+
+// Util functions
+
+function generateOTP(mobile) {
+  var options = {
+      'method': 'POST',
+      'url': 'https://cdn-api.co-vin.in/api/v2/auth/generateMobileOTP',
+      'headers': {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+          "secret": "U2FsdGVkX1+VTlP0So1QxL6tbZmIty6lx41dE0iN09YJTzJwqYwC06FCG90Sw8h7qgJhN+jW+TGYvKPDXOEv0Q==",
+          "mobile": mobile
+      })
+  };
+  request(options, function (error, response) {
+      if (error) throw new Error(error);
+      console.log(response.body);
+      return response.body;
+  });
+}
 
 router.get('/', function(req, res, next) {
   res.send("Welcome to the API")
@@ -66,13 +95,39 @@ router.post('/getBeneficiaries', function(req, res, next) {
 
 });
 
+router.post('/telegramBot', function(req, res, next) {
+
+  var message = req.body.message;
+  console.log(message);
+  
+  if (message.text == '/start') {
+    bot.sendMessage(message.chat.id, `Welcome ${message.from.first_name}. Enter your phone number`, {
+      reply_markup: {
+        force_reply: true
+      }
+    }).then(function(response) {
+      console.log(response);
+    }).catch(function(error) {
+      console.error(error);
+    })
+  }
+  
+  if (message.reply_to_message.text == `Welcome ${message.from.first_name}. Enter your phone number`) {
+    generateOTP(message.text)
+  }
+
+  res.send(true)
+
+});
+
 router.post('/searchVaccinationSlots', function(req, res, next) {
 
   var options = {
     'method': 'GET',
     'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${req.body.district_id}&date=${req.body.vaccine_date}`,
     'headers': {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${req.body.token}`
     },
   };
   request(options, function (error, response) {
