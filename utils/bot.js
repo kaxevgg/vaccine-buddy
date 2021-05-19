@@ -58,6 +58,29 @@ function sendStateSelectionMessage (chatId, bot) {
     })
 }
 
+function sendDistrictSelectionMessage (chatId, stateId, bot) {
+    utilMethods.getDistricts(stateId, function(response) {
+        var districts = response.districts;
+        var districtButtonOptions = []
+    
+        districts.map(function(district, index) {
+          districtButtonOptions.push({ text: district.district_name, callback_data: JSON.stringify({district_id: district.district_id, bot_command: "/district"})})
+        });
+  
+        districtButtonOptions = utilMethods.createGroups(districtButtonOptions, Math.ceil(districtButtonOptions.length/2))
+  
+        bot.sendMessage(chatId, messages.districtMessage, {
+          reply_markup: {
+            inline_keyboard: districtButtonOptions
+          }
+        }).then(function(response) {
+          console.log(response);
+        }).catch(function(error) {
+          console.error(error);
+        })
+    })
+}
+
 function sendCaptcha(chatId, userToken, bot) {
     utilMethods.getCaptcha(userToken, function(response) {
         var captcha = response.captcha;
@@ -75,5 +98,6 @@ function sendCaptcha(chatId, userToken, bot) {
 module.exports = {
     sendInitialMessage,
     sendStateSelectionMessage,
+    sendDistrictSelectionMessage,
     sendCaptcha
 }

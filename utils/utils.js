@@ -134,7 +134,7 @@ function searchSlots(districtId, vaccine_date, callback) {
 function getCaptcha(userToken, callback) {
     var options = {
         'method': 'POST',
-        'url': `https://cdn-api.co-vin.in/api/v2/auth/getRecaptcha`,
+        'url': 'https://cdn-api.co-vin.in/api/v2/auth/getRecaptcha',
         'headers': {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${userToken}`

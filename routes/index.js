@@ -103,36 +103,13 @@ bot.on("message", function(message) {
 })
 
 bot.on("callback_query", function(query) {
-  var queryData = JSON.parse(query.data)
+  var callbackQueryData = JSON.parse(query.data)
 
-  if (queryData.bot_command == "/state") {
-    stateId = queryData.state_id;
-    console.log(stateId);
-
-    utilMethods.getDistricts(stateId, function(response) {
-      var districts = response.districts;
-      var districtButtonOptions = []
-  
-      districts.map(function(district, index) {
-        districtButtonOptions.push({ text: district.district_name, callback_data: JSON.stringify({district_id: district.district_id, bot_command: "/district"})})
-      });
-
-      districtButtonOptions = utilMethods.createGroups(districtButtonOptions, Math.ceil(districtButtonOptions.length/2))
-
-      bot.sendMessage(query.message.chat.id, "Select your district", {
-        reply_markup: {
-          inline_keyboard: districtButtonOptions
-        }
-      }).then(function(response) {
-        console.log(response);
-      }).catch(function(error) {
-        console.error(error);
-      })
-    })
-  }
-
-  if (queryData.bot_command == "/district") {
-    districtId = queryData.district_id;
+  if (callbackQueryData.bot_command == "/state") {
+    stateId = callbackQueryData.state_id;
+    botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, bot)
+  } else if (callbackQueryData.bot_command == "/district") {
+    districtId = callbackQueryData.district_id;
     console.log(districtId);
   }
 })
