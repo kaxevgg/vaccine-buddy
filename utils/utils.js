@@ -1,4 +1,5 @@
 var request = require('request');
+var crypto = require('crypto');
 
 // Util functions
 
@@ -24,14 +25,13 @@ function generateOTP(mobile, callback) {
 
     request(options, function (error, response) {
         if (error) throw new Error(error);
-        // console.log(response.body)
-        // console.log(typeof response.body)
-        // console.log(JSON.parse(response.body).txnId);
         callback(JSON.parse(response.body))
     });
 }
 
 function validateOTP(otp, txnId, callback) {
+    var hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
+
     var options = {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/auth/validateMobileOtp',
@@ -39,7 +39,7 @@ function validateOTP(otp, txnId, callback) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            "otp": otp,
+            "otp": hashedOtp,
             "txnId": txnId
         })
 

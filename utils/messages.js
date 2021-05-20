@@ -28,5 +28,7 @@ module.exports.messages = {
     stateMessage: "Choose your state of residence:",
     districtMessage: "Choose your district of residence:",
     preferredVaccineMessage: "Choose your preferred vaccine(s):",
+    preferredVaccines: ["COVAXIN", "COVISHIELD"],
+    otpMessage: "Please enter OTP below:",
     beneficiariesMessage: "Select the beneficiaries for booking:"
 }
