@@ -143,24 +143,31 @@ function sendDistrictSelectionMessage (chatId, stateId, bot) {
     })
 }
 
-function sendPreferredVaccineMessage (chatId, bot) {
+function sendPreferredVaccineMessage (chatId, bot, users) {
     bot.sendPoll(chatId, messages.preferredVaccineMessage, messages.preferredVaccines, {
         is_anonymous: false,
         allows_multiple_answers: true
     }).then(function(response) {
         var pollId = response.poll.id;
+
+        users.doc(chatId.toString()).update({
+            preferredVaccinesPollId: pollId
+        }).then(function(response) {
+            console.log(response);
+        });
+
         console.log(response);
     }).catch(function(error) {
         console.error(error);
     })
 }
 
-function sendOTPMessage (chatId, phoneNumber, bot, callback) {
+function sendBeneficiaryOTPMessage (chatId, phoneNumber, bot, callback) {
     utilMethods.generateOTP(phoneNumber, function (response) {
         callback(response.txnId);
     });
 
-    bot.sendMessage(chatId, messages.otpMessage, {
+    bot.sendMessage(chatId, messages.beneficiariesOtpMessage, {
     reply_markup: {
         force_reply: true
     }
@@ -171,16 +178,40 @@ function sendOTPMessage (chatId, phoneNumber, bot, callback) {
     })
 }
 
-function sendBeneficiariesMessage (chatId, otp, txnId, bot) {
+function sendBookingOTPMessage (chatId, phoneNumber, bot, callback) {
+    utilMethods.generateOTP(phoneNumber, function (response) {
+        callback(response.txnId);
+    });
+
+    bot.sendMessage(chatId, messages.bookingOtpMessage, {
+    reply_markup: {
+        force_reply: true
+    }
+    }).then(function(response) {
+        console.log(response);
+    }).catch(function(error) {
+        console.error(error);
+    })
+}
+
+function sendBeneficiariesMessage (chatId, otp, txnId, bot, users) {
     utilMethods.validateOTP(otp, txnId, function (response) {
         var token = response.token;
 
-        userModel.userToken = token;
+        users.doc(chatId.toString()).update({
+            token: token
+        }).then(function(response) {
+            console.log(response);
+        });
 
         utilMethods.getBeneficiaries(token, function (beneficiariesResponse) {
             var beneficiaries = beneficiariesResponse.beneficiaries;
 
-            userModel.beneficiaries = beneficiaries;
+            users.doc(chatId.toString()).update({
+                allBeneficiaries: beneficiaries
+            }).then(function(response) {
+                console.log(response);
+            });
 
             var beneficiariesPollOptions = []
 
@@ -193,6 +224,13 @@ function sendBeneficiariesMessage (chatId, otp, txnId, bot) {
                 allows_multiple_answers: true
             }).then(function(response) {
                 var pollId = response.poll.id;
+
+                users.doc(chatId.toString()).update({
+                    beneficiariesPollId: pollId
+                }).then(function(response) {
+                    console.log(response);
+                });
+
                 console.log(response);
             }).catch(function(error) {
                 console.error(error);
@@ -215,6 +253,15 @@ function sendCaptcha(chatId, userToken, bot) {
     })
 } 
 
+function sendSetupCompleteMessage(chatId, bot) {
+    bot.sendMessage(chatId, messages.setupCompleteMessage)
+    .then(function(response) {
+        console.log(response);
+    }).catch(function(error) {
+        console.error(error);
+    })
+} 
+
 module.exports = {
     sendInitialMessage,
     sendVaccinationDateMessage,
@@ -223,7 +270,9 @@ module.exports = {
     sendStateSelectionMessage,
     sendDistrictSelectionMessage,
     sendPreferredVaccineMessage,
-    sendOTPMessage,
+    sendBeneficiaryOTPMessage,
+    sendBookingOTPMessage,
     sendBeneficiariesMessage,
-    sendCaptcha
+    sendCaptcha,
+    sendSetupCompleteMessage
 }

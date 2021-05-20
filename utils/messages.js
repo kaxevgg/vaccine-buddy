@@ -29,6 +29,8 @@ module.exports.messages = {
     districtMessage: "Choose your district of residence:",
     preferredVaccineMessage: "Choose your preferred vaccine(s):",
     preferredVaccines: ["COVAXIN", "COVISHIELD"],
-    otpMessage: "Please enter OTP below:",
-    beneficiariesMessage: "Select the beneficiaries for booking:"
+    beneficiariesOtpMessage: "Please enter OTP for beneficiaries below:",
+    beneficiariesMessage: "Select the beneficiaries for booking:",
+    bookingOtpMessage: "Please enter OTP for booking slot below:",
+    setupCompleteMessage: "You are all set! I will notify you when a slot is available. You will receive an OTP and a captcha image. Kindly enter the same to complete the booking!"
 }

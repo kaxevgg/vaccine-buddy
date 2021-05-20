@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "vaccine-buddy-4f7c7",
+  "private_key_id": "0ea0b92669d24f38377c21896ec2607d23a804fd",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCt9wZMX8VOxUpN\nNq/ipWQzG3p3hk4FAt/OFaJIOPFtiWKlr77L4Y+tUKjle2SLkryQHmdj7gEsj6kk\nzWgzlJspO1OtPT8qDW4iDpxxQ6VjR4cd3THwleAybeSIdKSGVn4e8UgLlJwsieGw\n9MPBshqUm4O6WXK+pi8A9aJjpIItLvXfvyaqpjDVgWf/XP3Z/mVcjEmnLD6hXScI\nKpczNYQhZJP2lT5fU8ouMYBs7FKnFzoNVjCr5BpLItwk6LmAB7fAilYHxWkpD2eW\nl+i0/u9e6y1ovFq/TFHwzZPGpQ6BV3ckC/3W0ntf8Z4GCdRlXqBNYJWSGgNkx6MS\nnADzIECpAgMBAAECggEAFFnHmzdgZuu6OpBlULmZoEdsgw87cQdiLFL4UCPWLWLT\nHxARPTtKsiMTkP3neBLvO1pNLMHe0gpPxon/cLpHkPIbYrKdoSMfUT1dlHvt/PBV\nCHuz8AGub6POpl5j0UHMwPynmZA12Vl7ZRarEE2QIbaUGUCFxXL+IGn7yFWKM3P/\noUaZmEvriC0J5fXEwkiQ5EFkezyIH9ew0UB7CIqJUUVWsgEQbpnPe8ZAusRYJPxl\nnVsR2PVAGTKb3AxntGE3pmiDA3V8NWk9IgeKawdFyWKbYEauwo+yx/3xq5LSbrQL\n3O8uBJoO1IN39C9E6yKXnjEv9YI4hm7onippoH1KcQKBgQDaIFKhKe+r3x7dO154\nytW4Ha6aqK3B4WvluxHhtKyU1gYoKmE/md3H2II0SfF9Yg6mEnmXpuhRWx6/0PN6\ndTQENNsYBkIxMPXagRXcYodwN/19GEtJ3+m8v1arkuK4OFy5yj+0BtzODf2C75D9\nlaVlPctZhXiSf5CLEboyYtS0mQKBgQDMK7z7i45tFZZAHnVtiY+s3ygOIWibpkIM\nfYImVf26+OL7c/2nFo+QNUddxEVPw354v8Pgh9Q34ewO+5l2GGhJzZou4nzdTm5b\nDOmIxilzRIzepypt30x/5DW+CEZ70PZ64rsbF6lDTL4qyPaDS04aNOiamE8/KXYV\nyNvFG9lmkQKBgCoSq/18GkebjNd9WRaRgTG3P/OC76kC8w3nzGYttFAtDBj5O7LJ\n2fZvM4YkcRkPLeYokB2JSyxOGBtFkYEgVD0veMckheX5HKLd3TqaIqeplRJo+jSw\npOQMQApuFZ8U+AW6FhmCbVqtZiW4Uc4n7DQf/DYzQXN4eYfpjnGjkIWZAoGBAIy8\nbYVbWm7ZHXvPQxShaRc5sAulfc0k2oxvi2JPjhnu68920db2VzmJcEszOq/Tyv8C\n+Mtx9ZgbtDNTvSHJi0GsZuaAmp+WK725ddUg+3uIOi5UPowEC2Bw95apb6RzkyN7\n3Iu9UKCiasdlRX+VTh4EcH34FVAtjUdQ8CS7oKzxAoGAK2/vOsS2Gu1XJnRVnLNL\nNPR/wYrTyQiAoImAyg1W4QpJTV8k8Kbe/Rk3AujpxomvTWINzFO5qpwEdzj3P2KB\nHzkFpsWFW9J8FQkZHI1HDemPvybf5oUKUh+AY5ezHodsPZrkzfyQuAEJKFYhCQPW\ngarn/W7iFn4RtKImsNI24mo=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-d9hpp@vaccine-buddy-4f7c7.iam.gserviceaccount.com",
+  "client_id": "110395263790289752140",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-d9hpp%40vaccine-buddy-4f7c7.iam.gserviceaccount.com"
+}

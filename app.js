@@ -2,21 +2,19 @@ var express = require('express');
 var path = require('path');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
-var cors = require('cors')
+var cors = require('cors');
 
+// Configure middleware
 var app = express();
 app.use(cors());
-
-var index = require('./routes/index');
-
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(logger('dev'));
 app.use(express.json()) // To parse the incoming requests with JSON payloads
 app.use(express.urlencoded({extended: true}));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Set routes
+var index = require('./routes/index');
 app.use('/', index);
 
 // catch 404 and forward to error handler
