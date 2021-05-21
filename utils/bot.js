@@ -423,11 +423,9 @@ function initiateBookingSlot(chatId, captcha) {
             utilMethods.bookSlot(slotData, response.data().token, function(bookingResponse) {
                 var appointmentId = bookingResponse.appointment_confirmation_no;
 
-                var bookingConfirmationMessage = `Hooray\\! Your appointment has been scheduled. Your appointment number is *${appointmentId}*\\. Please check the Cowin website for further details\\.`
+                var bookingConfirmationMessage = "Hooray! Your appointment has been scheduled. Please check the Cowin Website for further details."
 
-                bot.sendMessage(chatId, bookingConfirmationMessage, {
-                    parse_mode: 'MarkdownV2'
-                })
+                bot.sendMessage(chatId, bookingConfirmationMessage)
                 .then(function(response) {
                     console.log(response);
                 }).catch(function(error) {
