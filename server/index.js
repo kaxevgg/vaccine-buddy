@@ -179,9 +179,10 @@ bot.on("poll_answer", function(poll) {
         })
       } else if (pollId == response.data().initialSetupBeneficiariesPollId) {
         var beneficiaryIds = []
+        var allBeneficiaries = response.data().allBeneficiaries;
 
-        response.data().allBeneficiaries.map(function(beneficiary) {
-          beneficiaryIds.push(beneficiary.beneficiary_reference_id)
+        pollOptions.map(function(option) {
+          beneficiaryIds.push(allBeneficiaries[option].beneficiary_reference_id)
         });
 
         users.doc(chatId.toString()).update({
@@ -209,8 +210,10 @@ bot.on("poll_answer", function(poll) {
       } else if (pollId == response.data().updatedBeneficiariesPollId) {
         var beneficiaryIds = []
 
-        response.data().allBeneficiaries.map(function(beneficiary) {
-          beneficiaryIds.push(beneficiary.beneficiary_reference_id)
+        var allBeneficiaries = response.data().allBeneficiaries;
+
+        pollOptions.map(function(option) {
+          beneficiaryIds.push(allBeneficiaries[option].beneficiary_reference_id)
         });
 
         users.doc(chatId.toString()).update({
