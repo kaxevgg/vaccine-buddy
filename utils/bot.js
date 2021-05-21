@@ -253,11 +253,17 @@ function sendPreferredVaccineMessage (chatId, isInitialSetup) {
  * @function callback - Callback function for storing response
  */
 
-function sendBeneficiaryOTPMessage (chatId, phoneNumber, isInitialSetup, callback) {
+function sendBeneficiaryOTPMessage (chatId, phoneNumber, isInitialSetup) {
     var beneficiariesOtpMessage = isInitialSetup ? messages.setupMessages.beneficiariesOtpMessage : messages.commandMessages.beneficiariesOtpMessage;
 
     utilMethods.generateOTP(phoneNumber, function (response) {
-        callback(response.txnId);
+        var txnId = response.txnId;
+    
+        users.doc(chatId.toString()).update({
+            txnId: txnId
+        }).then(function(response) {
+            console.log(response);
+        });
     });
 
     bot.sendMessage(chatId, beneficiariesOtpMessage, {
@@ -279,12 +285,18 @@ function sendBeneficiaryOTPMessage (chatId, phoneNumber, isInitialSetup, callbac
  * @function callback - Callback function for storing response
  */
 
-function sendBookingOTPMessage (chatId, phoneNumber, callback) {
+function sendBookingOTPMessage (chatId, phoneNumber) {
     utilMethods.generateOTP(phoneNumber, function (response) {
-        callback(response.txnId);
+        var txnId = response.txnId;
+    
+        users.doc(chatId.toString()).update({
+            txnId: txnId
+        }).then(function(response) {
+        console.log(response);
+        });
     });
 
-    bot.sendMessage(chatId, messages.bookingOtpMessage, {
+    bot.sendMessage(chatId, messages.commandMessages.bookingOtpMessage, {
     reply_markup: {
         force_reply: true
     }
@@ -299,65 +311,150 @@ function sendBookingOTPMessage (chatId, phoneNumber, callback) {
  * @description - Sends beneficiary selection message to user
  * @param chatId - Identifier for current chat
  * @param otp - OTP entered by user
- * @param txnId - Transaction ID obtained after OTP generation message
- * @param bot - Instance of Telegram bot
  * @param isInitialSetup - Boolean for whether initial setup flow
- * @param users - Instance of firestore collection 'users'
  */
 
-function sendBeneficiariesMessage (chatId, otp, txnId, isInitialSetup) {
+function sendBeneficiariesMessage (chatId, otp, isInitialSetup) {
     var beneficiariesMessage = isInitialSetup ? messages.setupMessages.beneficiariesMessage : messages.commandMessages.beneficiariesMessage;
 
-    utilMethods.validateOTP(otp, txnId, function (response) {
-        var token = response.token;
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var txnId = response.data().txnId;
 
-        users.doc(chatId.toString()).update({
-            token: token
-        }).then(function(response) {
-            console.log(response);
-        });
-
-        utilMethods.getBeneficiaries(token, function (beneficiariesResponse) {
-            var beneficiaries = beneficiariesResponse.beneficiaries;
-
-            users.doc(chatId.toString()).update({
-                allBeneficiaries: beneficiaries
-            }).then(function(response) {
-                console.log(response);
+            utilMethods.validateOTP(otp, txnId, function (response) {
+                var token = response.token;
+        
+                users.doc(chatId.toString()).update({
+                    token: token
+                }).then(function(response) {
+                    console.log(response);
+                });
+        
+                utilMethods.getBeneficiaries(token, function (beneficiariesResponse) {
+                    var beneficiaries = beneficiariesResponse.beneficiaries;
+        
+                    users.doc(chatId.toString()).update({
+                        allBeneficiaries: beneficiaries
+                    }).then(function(response) {
+                        console.log(response);
+                    });
+        
+                    var beneficiariesPollOptions = []
+        
+                    beneficiaries.map(function(beneficiary) {
+                        beneficiariesPollOptions.push(beneficiary.name);
+                    })
+        
+                    bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
+                        is_anonymous: false,
+                        allows_multiple_answers: true
+                    }).then(function(response) {
+                        var pollId = response.poll.id;
+        
+                        if (isInitialSetup) {
+                            users.doc(chatId.toString()).update({
+                                initialSetupBeneficiariesPollId: pollId
+                            }).then(function(response) {
+                                console.log(response);
+                            });
+                        } else {
+                            users.doc(chatId.toString()).update({
+                                updatedBeneficiariesPollId: pollId
+                            }).then(function(response) {
+                                console.log(response);
+                            });
+                        }
+        
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    })
+                });
             });
-
-            var beneficiariesPollOptions = []
-
-            beneficiaries.map(function(beneficiary) {
-                beneficiariesPollOptions.push(beneficiary.name);
-            })
-
-            bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
-                is_anonymous: false,
-                allows_multiple_answers: true
-            }).then(function(response) {
-                var pollId = response.poll.id;
-
-                if (isInitialSetup) {
-                    users.doc(chatId.toString()).update({
-                        initialSetupBeneficiariesPollId: pollId
-                    }).then(function(response) {
-                        console.log(response);
-                    });
-                } else {
-                    users.doc(chatId.toString()).update({
-                        updatedBeneficiariesPollId: pollId
-                    }).then(function(response) {
-                        console.log(response);
-                    });
-                }
-
-                console.log(response);
-            }).catch(function(error) {
-                console.error(error);
-            })
-        });
+        }
     });
+}
+
+function searchSlots(chatId, otp) {
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var user = response.data();
+
+            utilMethods.validateOTP(otp, user.txnId, function (response) {
+                var token = response.token;
+        
+                users.doc(chatId.toString()).update({
+                    token: token
+                }).then(function(response) {
+                    console.log(response);
+                });
+
+                utilMethods.searchSlots(user, function (slotResponse) {
+                    console.log(slotResponse);
+
+                    if (slotResponse.success) {
+                        sendCaptcha(chatId, token);
+
+                        users.doc(chatId.toString()).update({
+                            availableSlot: slotResponse.data
+                        }).then(function(response) {
+                            console.log(response);
+                        });
+                    }
+                });
+            })
+        }
+    })
+} 
+
+function initiateBookingSlot(chatId, captcha) {
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var slotData = response.data().availableSlot;
+
+            slotData['captcha'] = captcha;
+
+            utilMethods.bookSlot(slotData, response.data().token, function(bookingResponse) {
+                var appointmentId = bookingResponse.appointment_confirmation_no;
+
+                var bookingConfirmationMessage = `Hooray\\! Your appointment has been scheduled. Your appointment number is *${appointmentId}*\\. Please check the Cowin website for further details\\.`
+
+                bot.sendMessage(chatId, bookingConfirmationMessage, {
+                    parse_mode: 'MarkdownV2'
+                })
+                .then(function(response) {
+                    console.log(response);
+                }).catch(function(error) {
+                    console.error(error);
+                });
+
+                users.doc(chatId.toString()).update({
+                    appointmentId: appointmentId
+                }).then(function(response) {
+                    console.log(response);
+                });
+
+                // Send PDF Response
+                /*
+                utilMethods.downloadAppointmentPDF(appointmentId, response.data().token, function(appointmentPdfResponse) {
+                    console.log(appointmentPdfResponse);
+
+                    // bot.sendDocument(chatId, appointmentPdfResponse)
+                    // .then(function(response) {
+                    //     console.log(response);
+                    // }).catch(function(error) {
+                    //     console.error(error);
+                    // });
+                })*/
+            })
+        }
+    })
 }
 
 /***
@@ -370,8 +467,13 @@ function sendBeneficiariesMessage (chatId, otp, txnId, isInitialSetup) {
 function sendCaptcha(chatId, userToken) {
     utilMethods.getCaptcha(userToken, function(response) {
         var captcha = response.captcha;
-        svgToPng.convert(captcha).then(function(response) {
-            bot.sendPhoto(chatId, response)
+        svgToPng.convert(captcha).then(function(responseCaptcha) {
+            bot.sendPhoto(chatId, responseCaptcha, {
+                caption: messages.commandMessages.captchaMessage,
+                reply_markup: {
+                    force_reply: true
+                }
+            })
             .then(function(response) {
                 console.log(response);
             }).catch(function(error) {
@@ -407,6 +509,8 @@ module.exports = {
     sendBeneficiaryOTPMessage,
     sendBookingOTPMessage,
     sendBeneficiariesMessage,
+    searchSlots,
+    initiateBookingSlot,
     sendCaptcha,
     sendSetupCompleteMessage
 }

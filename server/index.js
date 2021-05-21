@@ -18,7 +18,8 @@ bot.setMyCommands([
   {command: "state", description: "Set state of residence"},
   {command: "district", description: "Set district of residence"},
   {command: "vaccines", description: "Set preferred vaccines (Covaxin or Covishield)"},
-  {command: "beneficiaries", description: "Select beneficiaries for vaccination"}
+  {command: "beneficiaries", description: "Select beneficiaries for vaccination"},
+  {command: "book", description: "Initiate booking of vaccine"},
 ]);
 
 bot.on("message", function(message) {
@@ -66,15 +67,15 @@ bot.on("message", function(message) {
       if (!response.exists) {
         console.log("No user found")
       } else {
-        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, false, function(response) {
-          var txnId = response;
-    
-          users.doc(chatId.toString()).update({
-            txnId: txnId
-          }).then(function(response) {
-            console.log(response);
-          });
-        });
+        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, false);
+      }
+    })
+  } else if (message.text == '/book') {
+    users.doc(chatId.toString()).get().then(function(response) {
+      if (!response.exists) {
+        console.log("No user found")
+      } else {
+        botMethods.sendBookingOTPMessage(chatId, response.data().phoneNumber)
       }
     })
   }
@@ -109,28 +110,11 @@ bot.on("message", function(message) {
       botMethods.sendVaccinationDoseMessage(chatId, true)
     } else if (originalMessage.text == messages.setupMessages.beneficiariesOtpMessage) {
       var otp = message.text;
-
-      users.doc(chatId.toString()).get().then(function(response) {
-        if (!response.exists) {
-          console.error("No user found")
-        } else {
-          botMethods.sendBeneficiariesMessage(chatId, otp, response.data().txnId, true);
-        }
-      });
-    } else if (originalMessage.text == messages.setupMessages.bookingOtpMessage) {
-      var otp = message.text;
-    } 
+      botMethods.sendBeneficiariesMessage(chatId, otp, true);
+    }
 
     // HANDLING BOT COMMANDS
-    else if (originalMessage.text == messages.commandMessages.phoneNumberMessage) {
-      var phoneNumber = message.text;
-
-      users.doc(chatId.toString()).update({
-        phoneNumber: phoneNumber
-      }).then(function(response) {
-        console.log(response);
-      });
-    } else if (originalMessage.text == messages.commandMessages.vaccinationDateMessage) {
+    else if (originalMessage.text == messages.commandMessages.vaccinationDateMessage) {
       var vaccinationDate = message.text;
 
       users.doc(chatId.toString()).update({
@@ -147,7 +131,13 @@ bot.on("message", function(message) {
           botMethods.sendBeneficiariesMessage(chatId, otp, response.data().txnId, false);
         }
       });
-    }
+    } else if (originalMessage.text == messages.commandMessages.bookingOtpMessage) {
+      var otp = message.text;
+      botMethods.searchSlots(chatId, otp);
+    } else if (originalMessage.caption == messages.commandMessages.captchaMessage) {
+      var captcha = message.text;
+      botMethods.initiateBookingSlot(chatId, captcha);
+    } 
   }
 })
 
@@ -162,21 +152,18 @@ bot.on("poll_answer", function(poll) {
     } else {
       // HANDLING INITIAL SETUP FLOW
       if (pollId == response.data().initialSetupPreferredVaccinesPollId) {
-        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, true, function(response) {
-          var txnId = response;
-          var preferredVaccines = []
+        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, true);
+        var preferredVaccines = []
 
-          pollOptions.map(function(option) {
-            preferredVaccines.push(messages.preferredVaccines[option])
-          });
+        pollOptions.map(function(option) {
+          preferredVaccines.push(messages.preferredVaccines[option])
+        });
 
-          users.doc(chatId.toString()).update({
-            txnId: txnId,
-            preferredVaccines: preferredVaccines
-          }).then(function(response) {
-            console.log(response);
-          });
-        })
+        users.doc(chatId.toString()).update({
+          preferredVaccines: preferredVaccines
+        }).then(function(response) {
+          console.log(response);
+        });
       } else if (pollId == response.data().initialSetupBeneficiariesPollId) {
         var beneficiaryIds = []
         var allBeneficiaries = response.data().allBeneficiaries;

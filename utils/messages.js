@@ -30,8 +30,7 @@ module.exports.setupMessages = {
     preferredVaccineMessage: "Choose your preferred vaccine(s):",
     beneficiariesOtpMessage: "Please enter OTP for beneficiaries below:",
     beneficiariesMessage: "Select the beneficiaries for booking:",
-    bookingOtpMessage: "Please enter OTP for booking slot below:",
-    setupCompleteMessage: "You are all set! I will notify you when a slot is available. You will receive an OTP and a captcha image. Kindly enter the same to complete the booking!"
+    setupCompleteMessage: "You are all set! When you find out about an open slot, type /book. You will receive an OTP and a captcha image. Kindly enter the same to complete the booking!"
 }
 
 module.exports.commandMessages = {
@@ -42,7 +41,9 @@ module.exports.commandMessages = {
     districtMessage: "Choose your new district of residence:",
     preferredVaccineMessage: "Choose your updated preferred vaccine(s):",
     beneficiariesOtpMessage: "Please enter OTP for updated beneficiaries below:",
-    beneficiariesMessage: "Select the new beneficiaries for booking:"
+    beneficiariesMessage: "Select the new beneficiaries for booking:",
+    bookingOtpMessage: "Please enter OTP for booking slot below:",
+    captchaMessage: "Please enter CAPTCHA code below to complete booking:"
 }
 
 module.exports.preferredVaccines = ["COVAXIN", "COVISHIELD"]

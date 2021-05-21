@@ -135,10 +135,10 @@ function getDistricts(stateId, callback) {
  * @function callback - Callback function for storing response
  */
 
-function searchSlots(districtId, vaccine_date, callback) {
+function searchSlots(user, callback) {
     var options = {
         'method': 'GET',
-        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=${district_id}&date=${vaccine_date}`,
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
         'headers': {
             'Content-Type': 'application/json'
         },
@@ -147,29 +147,98 @@ function searchSlots(districtId, vaccine_date, callback) {
         if (error) throw new Error(error);
         var centers = JSON.parse(response.body).centers;
 
+        var slotFound = false;
+
         for (i in centers) {
             center = centers[i];
             for (j in center.sessions) {
                 session = center.sessions[j];
 
-                if (session.min_age_limit == req.body.age) {
-                    console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
+                if (user.dose == 1) {
+                    if (!slotFound && session.available_capacity_dose1 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
+                        console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
 
-                    data = {
-                        center_id: center.center_id,
-                        session_id: session.session_id,
-                        dose: 1,
-                        slot: session.slots[0],
-                        beneficiaries: []
+                        slotFound = true;
+    
+                        data = {
+                            center_id: center.center_id,
+                            session_id: session.session_id,
+                            dose: user.dose,
+                            slot: session.slots[0],
+                            beneficiaries: user.beneficiaryIds
+                        }
+    
+                        callback({
+                            success: true,
+                            message: "Slot Found!",
+                            data: data,
+                            session: session
+                        });
                     }
+                } else if (user.dose == 2) {
+                    if (!slotFound && session.available_capacity_dose2 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
+                        console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
 
-                    callback({
-                        message: "Slot Found!",
-                        data: data
-                    });
+                        slotFound = true;
+    
+                        data = {
+                            center_id: center.center_id,
+                            session_id: session.session_id,
+                            dose: user.dose,
+                            slot: session.slots[0],
+                            beneficiaries: user.beneficiaryIds
+                        }
+    
+                        callback({
+                            success: true,
+                            message: "Slot Found!",
+                            data: data,
+                            session: session
+                        });
+                    }
                 }
             }
         }
+
+        if (!slotFound) {
+            callback({
+                success: false,
+                message: "No Slots Found!"
+            })
+        }
+    });
+}
+
+function bookSlot(slotData, userToken, callback) {
+    var options = {
+        'method': 'POST',
+        'url': 'https://cdn-api.co-vin.in/api/v2/appointment/schedule',
+        'headers': {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken}`
+        },
+        'body': JSON.stringify(slotData)
+    };
+    request(options, function (error, response) {
+        if (error) throw new Error(error);
+        callback(JSON.parse(response.body));
+    });
+}
+
+function downloadAppointmentPDF (appointmentId, userToken, callback) {
+    // https://cdn-api.co-vin.in/api/v2/appointment/appointmentslip/download?appointment_id=22573087-c993-41e2-b9b1-b37992c1188a
+
+    var options = {
+        'method': 'GET',
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/appointmentslip/download?appointment_id=${appointmentId}`,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${userToken}`
+        }
+    };
+    request(options, function (error, response) {
+        if (error) throw new Error(error);
+        callback(response.body);
     });
 }
 
@@ -202,5 +271,7 @@ module.exports = {
     getStates,
     getDistricts,
     searchSlots,
+    bookSlot,
+    downloadAppointmentPDF,
     getCaptcha
 }
