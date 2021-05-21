@@ -1,25 +1,9 @@
 var express = require('express');
 var router = express.Router();
-const TelegramBot = require('node-telegram-bot-api');
 var botMethods = require("../utils/bot");
 var messages = require("../utils/messages");
-var firebase = require("firebase-admin");
-
-// Telegram Token
-const telegramToken = '1808569609:AAFd-x__o0pNFjMv20QsW9VCosDLfg_H5YY';
-
-// Create a bot that uses 'polling' to fetch new updates
-const bot = new TelegramBot(telegramToken, {polling: true});
-
-// Configure Firebase Cloudstore Database
-var serviceAccount = require("../firestore-certificate.json");
-firebase.initializeApp({
-  credential: firebase.credential.cert(serviceAccount)
-});
-
-// Get database
-var db = firebase.firestore();
-var users = db.collection('users');
+var bot = require("../config").bot;
+var users = require("../config").users;
 
 // Telegram Bot
 
@@ -58,31 +42,31 @@ bot.on("message", function(message) {
    * This will only handle response to user input
    */
   if (message.text == '/start') {
-    botMethods.sendInitialMessage(chatId, bot)
+    botMethods.sendInitialMessage(chatId)
   } else if (message.text == '/date') {
-    botMethods.sendVaccinationDateMessage(chatId, bot, false)
+    botMethods.sendVaccinationDateMessage(chatId, false)
   } else if (message.text == '/dose') {
-    botMethods.sendVaccinationDoseMessage(chatId, bot, false)
+    botMethods.sendVaccinationDoseMessage(chatId, false)
   } else if (message.text == '/age') {
-    botMethods.sendAgeBracketMessage(chatId, bot, false)
+    botMethods.sendAgeBracketMessage(chatId, false)
   } else if (message.text == '/state') {
-    botMethods.sendStateSelectionMessage(chatId, bot, false)
+    botMethods.sendStateSelectionMessage(chatId, false)
   } else if (message.text == '/district') {
     users.doc(chatId.toString()).get().then(function(response) {
       if (!response.exists) {
         console.log("No user found")
       } else {
-        botMethods.sendDistrictSelectionMessage(chatId, response.data().stateId, bot, false)
+        botMethods.sendDistrictSelectionMessage(chatId, response.data().stateId, false)
       }
     })
   } else if (message.text == '/vaccines') {
-    botMethods.sendPreferredVaccineMessage(chatId, bot, users, false)
+    botMethods.sendPreferredVaccineMessage(chatId, false)
   } else if (message.text == '/beneficiaries') {
     users.doc(chatId.toString()).get().then(function(response) {
       if (!response.exists) {
         console.log("No user found")
       } else {
-        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, bot, false, function(response) {
+        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, false, function(response) {
           var txnId = response;
     
           users.doc(chatId.toString()).update({
@@ -112,7 +96,7 @@ bot.on("message", function(message) {
         console.log(response);
       });
 
-      botMethods.sendVaccinationDateMessage(chatId, bot, true);
+      botMethods.sendVaccinationDateMessage(chatId, true);
     } else if (originalMessage.text == messages.setupMessages.vaccinationDateMessage) {
       var vaccinationDate = message.text;
 
@@ -122,7 +106,7 @@ bot.on("message", function(message) {
         console.log(response);
       });
 
-      botMethods.sendVaccinationDoseMessage(chatId, bot, true)
+      botMethods.sendVaccinationDoseMessage(chatId, true)
     } else if (originalMessage.text == messages.setupMessages.beneficiariesOtpMessage) {
       var otp = message.text;
 
@@ -130,7 +114,7 @@ bot.on("message", function(message) {
         if (!response.exists) {
           console.error("No user found")
         } else {
-          botMethods.sendBeneficiariesMessage(chatId, otp, response.data().txnId, bot, true, users);
+          botMethods.sendBeneficiariesMessage(chatId, otp, response.data().txnId, true);
         }
       });
     } else if (originalMessage.text == messages.setupMessages.bookingOtpMessage) {
@@ -160,7 +144,7 @@ bot.on("message", function(message) {
         if (!response.exists) {
           console.error("No user found")
         } else {
-          botMethods.sendBeneficiariesMessage(chatId, otp, response.data().txnId, bot, false, users);
+          botMethods.sendBeneficiariesMessage(chatId, otp, response.data().txnId, false);
         }
       });
     }
@@ -178,7 +162,7 @@ bot.on("poll_answer", function(poll) {
     } else {
       // HANDLING INITIAL SETUP FLOW
       if (pollId == response.data().initialSetupPreferredVaccinesPollId) {
-        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, bot, true, function(response) {
+        botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, true, function(response) {
           var txnId = response;
           var preferredVaccines = []
 
@@ -206,7 +190,7 @@ bot.on("poll_answer", function(poll) {
           console.log(response);
         });
 
-        botMethods.sendSetupCompleteMessage(chatId, bot);
+        botMethods.sendSetupCompleteMessage(chatId);
       } 
 
       // HANDLING BOT COMMANDS
@@ -253,7 +237,7 @@ bot.on("callback_query", function(query) {
     });
 
     if (callbackQueryData.isInitialSetup) {
-      botMethods.sendAgeBracketMessage(query.message.chat.id, bot, true)
+      botMethods.sendAgeBracketMessage(query.message.chat.id, true)
     }
   } else if (callbackQueryData.bot_command == "/age") {
     var minAge = callbackQueryData.minAge;
@@ -265,7 +249,7 @@ bot.on("callback_query", function(query) {
     });
 
     if (callbackQueryData.isInitialSetup) {
-      botMethods.sendStateSelectionMessage(query.message.chat.id, bot, true)
+      botMethods.sendStateSelectionMessage(query.message.chat.id, true)
     }
   } else if (callbackQueryData.bot_command == "/state") {
     var stateId = callbackQueryData.stateId;
@@ -277,7 +261,7 @@ bot.on("callback_query", function(query) {
     });
 
     if (callbackQueryData.isInitialSetup) {
-      botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, bot, true)
+      botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, true)
     }
   } else if (callbackQueryData.bot_command == "/district") {
     var districtId = callbackQueryData.districtId;
@@ -289,7 +273,7 @@ bot.on("callback_query", function(query) {
     });
 
     if (callbackQueryData.isInitial) {
-      botMethods.sendPreferredVaccineMessage(query.message.chat.id, bot, users, true)
+      botMethods.sendPreferredVaccineMessage(query.message.chat.id, true)
     }
   }
 })

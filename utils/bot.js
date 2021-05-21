@@ -1,6 +1,8 @@
 var utilMethods = require("./utils");
 var messages = require('./messages');
 var svgToPng = require('convert-svg-to-png');
+var bot = require("../config").bot;
+var users = require("../config").users;
 
 /***
  * @description - Sends initial greeting message to user
@@ -8,7 +10,7 @@ var svgToPng = require('convert-svg-to-png');
  * @param bot - Instance of Telegram bot
  */
 
-function sendInitialMessage (chatId, bot) {
+function sendInitialMessage (chatId) {
     /*
         Escape the following characters with \\:
         . - ( ) !
@@ -48,7 +50,7 @@ function sendInitialMessage (chatId, bot) {
  * @param isInitialSetup - Boolean for whether initial setup flow
  */
 
-function sendVaccinationDateMessage (chatId, bot, isInitialSetup) {
+function sendVaccinationDateMessage (chatId, isInitialSetup) {
     var vaccinationDateMessage = isInitialSetup ? messages.setupMessages.vaccinationDateMessage : messages.commandMessages.vaccinationDateMessage;
 
     bot.sendMessage(chatId, vaccinationDateMessage, 
@@ -70,7 +72,7 @@ function sendVaccinationDateMessage (chatId, bot, isInitialSetup) {
  * @param isInitialSetup - Boolean for whether initial setup flow
  */
 
-function sendVaccinationDoseMessage (chatId, bot, isInitialSetup) {
+function sendVaccinationDoseMessage (chatId, isInitialSetup) {
     var doseMessage = isInitialSetup ? messages.setupMessages.doseMessage : messages.commandMessages.doseMessage;
 
     bot.sendMessage(chatId, doseMessage, 
@@ -105,7 +107,7 @@ function sendVaccinationDoseMessage (chatId, bot, isInitialSetup) {
  * @param isInitialSetup - Boolean for whether initial setup flow
  */
 
-function sendAgeBracketMessage (chatId, bot, isInitialSetup) {
+function sendAgeBracketMessage (chatId, isInitialSetup) {
     var ageMessage = isInitialSetup ? messages.setupMessages.ageMessage : messages.commandMessages.ageMessage;
 
     bot.sendMessage(chatId, ageMessage, 
@@ -140,7 +142,7 @@ function sendAgeBracketMessage (chatId, bot, isInitialSetup) {
  * @param isInitialSetup - Boolean for whether initial setup flow
  */
 
-function sendStateSelectionMessage (chatId, bot, isInitialSetup) {
+function sendStateSelectionMessage (chatId, isInitialSetup) {
     var stateMessage = isInitialSetup ? messages.setupMessages.stateMessage : messages.commandMessages.stateMessage;
 
     utilMethods.getStates(function(response) {
@@ -173,7 +175,7 @@ function sendStateSelectionMessage (chatId, bot, isInitialSetup) {
  * @param isInitialSetup - Boolean for whether initial setup flow
  */
 
-function sendDistrictSelectionMessage (chatId, stateId, bot, isInitialSetup) {
+function sendDistrictSelectionMessage (chatId, stateId, isInitialSetup) {
     var districtMessage = isInitialSetup ? messages.setupMessages.districtMessage : messages.commandMessages.districtMessage;
 
     utilMethods.getDistricts(stateId, function(response) {
@@ -213,7 +215,7 @@ function sendDistrictSelectionMessage (chatId, stateId, bot, isInitialSetup) {
  * @param isInitialSetup - Boolean for whether initial setup flow
  */
 
-function sendPreferredVaccineMessage (chatId, bot, users, isInitialSetup) {
+function sendPreferredVaccineMessage (chatId, isInitialSetup) {
     var preferredVaccineMessage = isInitialSetup ? messages.setupMessages.preferredVaccineMessage : messages.commandMessages.preferredVaccineMessage;
 
     bot.sendPoll(chatId, preferredVaccineMessage, messages.preferredVaccines, {
@@ -251,7 +253,7 @@ function sendPreferredVaccineMessage (chatId, bot, users, isInitialSetup) {
  * @function callback - Callback function for storing response
  */
 
-function sendBeneficiaryOTPMessage (chatId, phoneNumber, bot, isInitialSetup, callback) {
+function sendBeneficiaryOTPMessage (chatId, phoneNumber, isInitialSetup, callback) {
     var beneficiariesOtpMessage = isInitialSetup ? messages.setupMessages.beneficiariesOtpMessage : messages.commandMessages.beneficiariesOtpMessage;
 
     utilMethods.generateOTP(phoneNumber, function (response) {
@@ -277,7 +279,7 @@ function sendBeneficiaryOTPMessage (chatId, phoneNumber, bot, isInitialSetup, ca
  * @function callback - Callback function for storing response
  */
 
-function sendBookingOTPMessage (chatId, phoneNumber, bot, callback) {
+function sendBookingOTPMessage (chatId, phoneNumber, callback) {
     utilMethods.generateOTP(phoneNumber, function (response) {
         callback(response.txnId);
     });
@@ -303,7 +305,7 @@ function sendBookingOTPMessage (chatId, phoneNumber, bot, callback) {
  * @param users - Instance of firestore collection 'users'
  */
 
-function sendBeneficiariesMessage (chatId, otp, txnId, bot, isInitialSetup, users) {
+function sendBeneficiariesMessage (chatId, otp, txnId, isInitialSetup) {
     var beneficiariesMessage = isInitialSetup ? messages.setupMessages.beneficiariesMessage : messages.commandMessages.beneficiariesMessage;
 
     utilMethods.validateOTP(otp, txnId, function (response) {
@@ -365,7 +367,7 @@ function sendBeneficiariesMessage (chatId, otp, txnId, bot, isInitialSetup, user
  * @param bot - Instance of Telegram bot
  */
 
-function sendCaptcha(chatId, userToken, bot) {
+function sendCaptcha(chatId, userToken) {
     utilMethods.getCaptcha(userToken, function(response) {
         var captcha = response.captcha;
         svgToPng.convert(captcha).then(function(response) {
@@ -385,7 +387,7 @@ function sendCaptcha(chatId, userToken, bot) {
  * @param bot - Instance of Telegram bot
  */
 
-function sendSetupCompleteMessage(chatId, bot) {
+function sendSetupCompleteMessage(chatId) {
     bot.sendMessage(chatId, messages.setupMessages.setupCompleteMessage)
     .then(function(response) {
         console.log(response);
