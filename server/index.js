@@ -268,4 +268,8 @@ bot.on("callback_query", function(query) {
   }
 })
 
+router.get('/', function(req, res, next) {
+  res.send("Hello");
+})
+
 module.exports = router;
