@@ -3,12 +3,24 @@ var crypto = require('crypto');
 
 // Util functions
 
+/***
+ * @description - Splits array into sub-arrays
+ * @param arr - Input Array
+ * @param numGroups - Number of sub-arrays to split array into
+ */
+
 function createGroups(arr, numGroups) {
     const perGroup = Math.ceil(arr.length / numGroups);
     return new Array(numGroups)
         .fill('')
         .map((_, i) => arr.slice(i * perGroup, (i + 1) * perGroup));
 }
+
+/***
+ * @description - Generates Mobile OTP
+ * @param mobile - Mobile number of user
+ * @function callback - Callback function for storing response
+ */
 
 function generateOTP(mobile, callback) {
     var options = {
@@ -28,6 +40,12 @@ function generateOTP(mobile, callback) {
         callback(JSON.parse(response.body))
     });
 }
+
+/***
+ * @description - Validates Mobile OTP for authentication of user
+ * @param otp - Plaintext OTP entered by user
+ * @function callback - Callback function for storing response
+ */
 
 function validateOTP(otp, txnId, callback) {
     var hashedOtp = crypto.createHash("sha256").update(otp).digest("hex");
@@ -50,6 +68,12 @@ function validateOTP(otp, txnId, callback) {
     });
 }
 
+/***
+ * @description - Gets list of beneficiaries currently registered on user's Cowin account
+ * @param userToken - Authentication token for current user 
+ * @function callback - Callback function for storing response
+ */
+
 function getBeneficiaries(userToken, callback) {
     var options = {
         'method': 'GET',
@@ -65,6 +89,11 @@ function getBeneficiaries(userToken, callback) {
     });
 }
 
+/***
+ * @description - Gets list of States and State IDs from Cowin API
+ * @function callback - Callback function for storing response
+ */
+
 function getStates(callback) {
     var options = {
         'method': 'GET',
@@ -79,6 +108,12 @@ function getStates(callback) {
     });
 }
 
+/***
+ * @description - Gets list of Districts and District IDs from Cowin API
+ * @param stateId - Identifier for user's selected state
+ * @function callback - Callback function for storing response
+ */
+
 function getDistricts(stateId, callback) {
     var options = {
         'method': 'GET',
@@ -92,6 +127,13 @@ function getDistricts(stateId, callback) {
         callback(JSON.parse(response.body))
     });
 }
+
+/***
+ * @description - Gets list of available vaccine slots
+ * @param districtId - Identifier for user's selected district
+ * @param vaccine_date - Vaccination date selected by the user
+ * @function callback - Callback function for storing response
+ */
 
 function searchSlots(districtId, vaccine_date, callback) {
     var options = {
@@ -130,6 +172,12 @@ function searchSlots(districtId, vaccine_date, callback) {
         }
     });
 }
+
+/***
+ * @description - Generates CAPTCHA Code for authentication
+ * @param userToken - Authentication token for current user 
+ * @function callback - Callback function for storing response
+ */
 
 function getCaptcha(userToken, callback) {
     var options = {

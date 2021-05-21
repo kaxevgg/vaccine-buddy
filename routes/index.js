@@ -3,7 +3,6 @@ var router = express.Router();
 const TelegramBot = require('node-telegram-bot-api');
 var botMethods = require("../utils/bot");
 var messages = require("../utils/messages");
-var userModel = require("../utils/userModel").userModel;
 var firebase = require("firebase-admin");
 
 // Telegram Token
@@ -54,7 +53,10 @@ bot.on("message", function(message) {
     }
   })
 
-  // Track bot commands
+  /***
+   * Handling all bot commands
+   * This will only handle response to user input
+   */
   if (message.text == '/start') {
     botMethods.sendInitialMessage(chatId, bot)
   } else if (message.text == '/date') {
@@ -66,7 +68,6 @@ bot.on("message", function(message) {
   } else if (message.text == '/state') {
     botMethods.sendStateSelectionMessage(chatId, bot, false)
   } else if (message.text == '/district') {
-    // Get StateId from Database
     users.doc(chatId.toString()).get().then(function(response) {
       if (!response.exists) {
         console.log("No user found")
@@ -94,10 +95,14 @@ bot.on("message", function(message) {
     })
   }
 
-  // Track message replies for initial setup
+  /***
+   * Handling all message replies
+   */
+
   if ('reply_to_message' in message) {
     var originalMessage = message.reply_to_message;
 
+    // HANDLING INITIAL SETUP FLOW
     if (originalMessage.text == messages.setupMessages.phoneNumberMessage) {
       var phoneNumber = message.text;
 
@@ -107,7 +112,6 @@ bot.on("message", function(message) {
         console.log(response);
       });
 
-      // Send vaccination date message
       botMethods.sendVaccinationDateMessage(chatId, bot, true);
     } else if (originalMessage.text == messages.setupMessages.vaccinationDateMessage) {
       var vaccinationDate = message.text;
@@ -118,12 +122,10 @@ bot.on("message", function(message) {
         console.log(response);
       });
 
-      // Send vaccination dose number message
       botMethods.sendVaccinationDoseMessage(chatId, bot, true)
     } else if (originalMessage.text == messages.setupMessages.beneficiariesOtpMessage) {
       var otp = message.text;
 
-      // Send vaccination dose number message
       users.doc(chatId.toString()).get().then(function(response) {
         if (!response.exists) {
           console.error("No user found")
@@ -133,12 +135,9 @@ bot.on("message", function(message) {
       });
     } else if (originalMessage.text == messages.setupMessages.bookingOtpMessage) {
       var otp = message.text;
-
-      // Book vaccination slot
     } 
 
-    // Bot command handling
-
+    // HANDLING BOT COMMANDS
     else if (originalMessage.text == messages.commandMessages.phoneNumberMessage) {
       var phoneNumber = message.text;
 
@@ -157,8 +156,6 @@ bot.on("message", function(message) {
       });
     } else if (originalMessage.text == messages.commandMessages.beneficiariesOtpMessage) {
       var otp = message.text;
-
-      // Send vaccination dose number message
       users.doc(chatId.toString()).get().then(function(response) {
         if (!response.exists) {
           console.error("No user found")
@@ -179,6 +176,7 @@ bot.on("poll_answer", function(poll) {
     if (!response.exists) {
       console.error("No user found")
     } else {
+      // HANDLING INITIAL SETUP FLOW
       if (pollId == response.data().initialSetupPreferredVaccinesPollId) {
         botMethods.sendBeneficiaryOTPMessage(chatId, response.data().phoneNumber, bot, true, function(response) {
           var txnId = response;
@@ -195,18 +193,6 @@ bot.on("poll_answer", function(poll) {
             console.log(response);
           });
         })
-      } else if (pollId == response.data().updatedPreferredVaccinesPollId) {
-        var preferredVaccines = []
-
-        pollOptions.map(function(option) {
-          preferredVaccines.push(messages.preferredVaccines[option])
-        });
-
-        users.doc(chatId.toString()).update({
-          preferredVaccines: preferredVaccines
-        }).then(function(response) {
-          console.log(response);
-        });
       } else if (pollId == response.data().initialSetupBeneficiariesPollId) {
         var beneficiaryIds = []
 
@@ -221,6 +207,21 @@ bot.on("poll_answer", function(poll) {
         });
 
         botMethods.sendSetupCompleteMessage(chatId, bot);
+      } 
+
+      // HANDLING BOT COMMANDS
+      else if (pollId == response.data().updatedPreferredVaccinesPollId) {
+        var preferredVaccines = []
+
+        pollOptions.map(function(option) {
+          preferredVaccines.push(messages.preferredVaccines[option])
+        });
+
+        users.doc(chatId.toString()).update({
+          preferredVaccines: preferredVaccines
+        }).then(function(response) {
+          console.log(response);
+        });
       } else if (pollId == response.data().updatedBeneficiariesPollId) {
         var beneficiaryIds = []
 
@@ -292,9 +293,5 @@ bot.on("callback_query", function(query) {
     }
   }
 })
-
-// router.get('/', function(req, res, next) {
-//   res.send("Welcome to the API")
-// });
 
 module.exports = router;
