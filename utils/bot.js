@@ -346,30 +346,44 @@ function sendBeneficiariesMessage (chatId, otp, isInitialSetup) {
                         beneficiariesPollOptions.push(beneficiary.name);
                     })
         
-                    bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
-                        is_anonymous: false,
-                        allows_multiple_answers: true
-                    }).then(function(response) {
-                        var pollId = response.poll.id;
-        
-                        if (isInitialSetup) {
-                            users.doc(chatId.toString()).update({
-                                initialSetupBeneficiariesPollId: pollId
-                            }).then(function(response) {
-                                console.log(response);
-                            });
-                        } else {
-                            users.doc(chatId.toString()).update({
-                                updatedBeneficiariesPollId: pollId
-                            }).then(function(response) {
-                                console.log(response);
-                            });
-                        }
-        
-                        console.log(response);
-                    }).catch(function(error) {
-                        console.error(error);
-                    })
+                    if (beneficiariesPollOptions.length > 1) {
+                        bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
+                            is_anonymous: false,
+                            allows_multiple_answers: true
+                        }).then(function(response) {
+                            var pollId = response.poll.id;
+            
+                            if (isInitialSetup) {
+                                users.doc(chatId.toString()).update({
+                                    initialSetupBeneficiariesPollId: pollId
+                                }).then(function(response) {
+                                    console.log(response);
+                                });
+                            } else {
+                                users.doc(chatId.toString()).update({
+                                    updatedBeneficiariesPollId: pollId
+                                }).then(function(response) {
+                                    console.log(response);
+                                });
+                            }
+            
+                            console.log(response);
+                        }).catch(function(error) {
+                            console.error(error);
+                        })
+                    } else if (beneficiariesPollOptions.length == 1) {
+                        var beneficiaryIds = [];
+
+                        beneficiaries.map(function(beneficiary) {
+                            beneficiaryIds.push(beneficiary.beneficiary_reference_id)
+                        })
+
+                        users.doc(chatId.toString()).update({
+                            beneficiaryIds: beneficiaryIds
+                        }).then(function(response) {
+                            console.log(response);
+                        });
+                    }
                 });
             });
         }
@@ -390,9 +404,8 @@ function searchSlots(chatId, otp) {
                     token: token
                 }).then(function(response) {
                     console.log(response);
+                    utilMethods.searchSlots(chatId, user, 1)
                 });
-
-                utilMethods.searchSlots(chatId, user, 1)
             })
         }
     })

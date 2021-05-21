@@ -141,10 +141,9 @@ function getDistricts(stateId, callback) {
 function searchSlots(chatId, user, trialNumber) {
     var options = {
         'method': 'GET',
-        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
         'headers': {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.token}`
+            'Content-Type': 'application/json'
         },
     };
     request(options, function (error, response) {
@@ -201,17 +200,26 @@ function searchSlots(chatId, user, trialNumber) {
             trials += 1;
             if (trials <= 60) {
                 bot.sendMessage(chatId, "No slots found. Searching again . . .")
+                .then(function(response) {
+                    // console.log(response);
+                }).catch (function (error) {
+                    console.error(error);
+                });
+                console.log("No slots found. Searching again . . .");
                 setTimeout(function() {
                     searchSlots(chatId, user, trials);
                 }, 2000);
             } else {
                 bot.sendMessage(chatId, "No slots found. Try again later.")
+                
+                console.log("No slots found. Try again later.");
             }
         } else {
             sendCaptcha(chatId, user.token);
 
             users.doc(chatId.toString()).update({
-                availableSlot: slotData
+                availableSlot: slotData,
+                availableSlotDetails: sessionDetails
             }).then(function(response) {
                 console.log(response);
             });

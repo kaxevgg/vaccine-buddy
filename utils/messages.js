@@ -22,7 +22,7 @@ module.exports.setupMessages = {
         
     Hope I am able to assist you\\! Let's begin\\!`,
     phoneNumberMessage: "Let's start with your phone number. Enter your phone number below:",
-    vaccinationDateMessage: "Enter your preferred vaccination date (DD-YY-MMMM)",
+    vaccinationDateMessage: "Enter your preferred vaccination date (DD-MM-YYYY)",
     doseMessage: "Choose Dose number (1 or 2):",
     ageMessage: "Choose the age bracket (18 - 44 or 45+):",
     stateMessage: "Choose your state of residence:",
@@ -34,7 +34,7 @@ module.exports.setupMessages = {
 }
 
 module.exports.commandMessages = {
-    vaccinationDateMessage: "Enter your new preferred vaccination date (DD-YY-MMMM)",
+    vaccinationDateMessage: "Enter your new preferred vaccination date (DD-MM-YYYY)",
     doseMessage: "Choose new Dose number (1 or 2):",
     ageMessage: "Choose the new age backet (18 - 44 or 45+):",
     stateMessage: "Choose your new state of residence:",
