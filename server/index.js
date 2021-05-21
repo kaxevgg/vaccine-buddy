@@ -29,9 +29,7 @@ bot.on("message", function(message) {
   users.doc(chatId.toString()).get().then(function(response) {
     if (!response.exists) {
       users.doc(chatId.toString()).set({
-        first_name: message.from.first_name,
-        last_name: message.from.last_name,
-        username: message.from.username
+        first_name: message.from.first_name
       }).then(function(response) {
         console.log(response);
       })
@@ -252,6 +250,8 @@ bot.on("callback_query", function(query) {
 
     if (callbackQueryData.isInitialSetup) {
       botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, true)
+    } else {
+      botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, false)
     }
   } else if (callbackQueryData.bot_command == "/district") {
     var districtId = callbackQueryData.districtId;

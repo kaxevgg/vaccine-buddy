@@ -1,6 +1,5 @@
 var utilMethods = require("./utils");
 var messages = require('./messages');
-var svgToPng = require('convert-svg-to-png');
 var bot = require("../config").bot;
 var users = require("../config").users;
 
@@ -393,19 +392,7 @@ function searchSlots(chatId, otp) {
                     console.log(response);
                 });
 
-                utilMethods.searchSlots(user, function (slotResponse) {
-                    console.log(slotResponse);
-
-                    if (slotResponse.success) {
-                        sendCaptcha(chatId, token);
-
-                        users.doc(chatId.toString()).update({
-                            availableSlot: slotResponse.data
-                        }).then(function(response) {
-                            console.log(response);
-                        });
-                    }
-                });
+                utilMethods.searchSlots(chatId, user, 1)
             })
         }
     })
@@ -456,32 +443,6 @@ function initiateBookingSlot(chatId, captcha) {
 }
 
 /***
- * @description - Sends captcha image to user to complete appointment booking
- * @param chatId - Identifier for current chat
- * @param userToken - Authentication token for current user
- * @param bot - Instance of Telegram bot
- */
-
-function sendCaptcha(chatId, userToken) {
-    utilMethods.getCaptcha(userToken, function(response) {
-        var captcha = response.captcha;
-        svgToPng.convert(captcha).then(function(responseCaptcha) {
-            bot.sendPhoto(chatId, responseCaptcha, {
-                caption: messages.commandMessages.captchaMessage,
-                reply_markup: {
-                    force_reply: true
-                }
-            })
-            .then(function(response) {
-                console.log(response);
-            }).catch(function(error) {
-                console.error(error);
-            })
-        })
-    })
-} 
-
-/***
  * @description - Sends initial setup completion message to user
  * @param chatId - Identifier for current chat
  * @param bot - Instance of Telegram bot
@@ -509,6 +470,5 @@ module.exports = {
     sendBeneficiariesMessage,
     searchSlots,
     initiateBookingSlot,
-    sendCaptcha,
     sendSetupCompleteMessage
 }

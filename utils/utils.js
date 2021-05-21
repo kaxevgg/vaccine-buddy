@@ -1,5 +1,8 @@
 var request = require('request');
 var crypto = require('crypto');
+var bot = require("../config").bot;
+var users = require("../config").users;
+var svgToPng = require('convert-svg-to-png');
 
 // Util functions
 
@@ -135,19 +138,23 @@ function getDistricts(stateId, callback) {
  * @function callback - Callback function for storing response
  */
 
-function searchSlots(user, callback) {
+function searchSlots(chatId, user, trialNumber) {
     var options = {
         'method': 'GET',
-        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
         },
     };
     request(options, function (error, response) {
         if (error) throw new Error(error);
         var centers = JSON.parse(response.body).centers;
 
+        var trials = trialNumber;
         var slotFound = false;
+        var slotData;
+        var sessionDetails;
 
         for (i in centers) {
             center = centers[i];
@@ -160,7 +167,7 @@ function searchSlots(user, callback) {
 
                         slotFound = true;
     
-                        data = {
+                        slotData = {
                             center_id: center.center_id,
                             session_id: session.session_id,
                             dose: user.dose,
@@ -168,12 +175,7 @@ function searchSlots(user, callback) {
                             beneficiaries: user.beneficiaryIds
                         }
     
-                        callback({
-                            success: true,
-                            message: "Slot Found!",
-                            data: data,
-                            session: session
-                        });
+                        sessionDetails = session;
                     }
                 } else if (user.dose == 2) {
                     if (!slotFound && session.available_capacity_dose2 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
@@ -181,7 +183,7 @@ function searchSlots(user, callback) {
 
                         slotFound = true;
     
-                        data = {
+                        slotData = {
                             center_id: center.center_id,
                             session_id: session.session_id,
                             dose: user.dose,
@@ -189,22 +191,30 @@ function searchSlots(user, callback) {
                             beneficiaries: user.beneficiaryIds
                         }
     
-                        callback({
-                            success: true,
-                            message: "Slot Found!",
-                            data: data,
-                            session: session
-                        });
+                        sessionDetails = session;
                     }
                 }
             }
         }
 
         if (!slotFound) {
-            callback({
-                success: false,
-                message: "No Slots Found!"
-            })
+            trials += 1;
+            if (trials <= 60) {
+                bot.sendMessage(chatId, "No slots found. Searching again . . .")
+                setTimeout(function() {
+                    searchSlots(chatId, user, trials);
+                }, 2000);
+            } else {
+                bot.sendMessage(chatId, "No slots found. Try again later.")
+            }
+        } else {
+            sendCaptcha(chatId, user.token);
+
+            users.doc(chatId.toString()).update({
+                availableSlot: slotData
+            }).then(function(response) {
+                console.log(response);
+            });
         }
     });
 }
@@ -243,6 +253,32 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
 }
 
 /***
+ * @description - Sends captcha image to user to complete appointment booking
+ * @param chatId - Identifier for current chat
+ * @param userToken - Authentication token for current user
+ * @param bot - Instance of Telegram bot
+ */
+
+ function sendCaptcha(chatId, userToken) {
+    getCaptcha(userToken, function(response) {
+        var captcha = response.captcha;
+        svgToPng.convert(captcha).then(function(responseCaptcha) {
+            bot.sendPhoto(chatId, responseCaptcha, {
+                caption: messages.commandMessages.captchaMessage,
+                reply_markup: {
+                    force_reply: true
+                }
+            })
+            .then(function(response) {
+                console.log(response);
+            }).catch(function(error) {
+                console.error(error);
+            })
+        })
+    })
+} 
+
+/***
  * @description - Generates CAPTCHA Code for authentication
  * @param userToken - Authentication token for current user 
  * @function callback - Callback function for storing response
@@ -273,5 +309,6 @@ module.exports = {
     searchSlots,
     bookSlot,
     downloadAppointmentPDF,
+    sendCaptcha,
     getCaptcha
 }
