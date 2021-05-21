@@ -12,6 +12,7 @@
     "crypto": "^1.0.1",
     "debug": "~2.6.3",
     "express": "^4.17.1",
+    "firebase-admin": "^9.8.0",
     "morgan": "^1.10.0",
     "node-telegram-bot-api": "^0.53.0",
     "request": "^2.88.2",

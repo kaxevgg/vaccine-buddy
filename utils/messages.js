@@ -1,4 +1,4 @@
-module.exports.messages = {
+module.exports.setupMessages = {
     initialMessage: `Welcome to Vaccine Buddy\\. Happy to assist you with booking your vaccination slot\\. I will be collecting the following details before assisting you:
 
     1\\. *Phone Number* \\- _For authentication purposes_
@@ -24,11 +24,26 @@ module.exports.messages = {
     phoneNumberMessage: "Let's start with your phone number. Enter your phone number below:",
     vaccinationDateMessage: "Enter your preferred vaccination date (DD-YY-MMMM)",
     doseMessage: "Choose Dose number (1 or 2):",
-    ageMessage: "Choose the minimum age for vaccines (18 or 45):",
+    ageMessage: "Choose the age bracket (18 - 44 or 45+):",
     stateMessage: "Choose your state of residence:",
     districtMessage: "Choose your district of residence:",
     preferredVaccineMessage: "Choose your preferred vaccine(s):",
-    preferredVaccines: ["COVAXIN", "COVISHIELD"],
-    otpMessage: "Please enter OTP below:",
-    beneficiariesMessage: "Select the beneficiaries for booking:"
+    beneficiariesOtpMessage: "Please enter OTP for beneficiaries below:",
+    beneficiariesMessage: "Select the beneficiaries for booking:",
+    setupCompleteMessage: "You are all set! When you find out about an open slot, type /book. You will receive an OTP and a captcha image. Kindly enter the same to complete the booking!"
 }
+
+module.exports.commandMessages = {
+    vaccinationDateMessage: "Enter your new preferred vaccination date (DD-YY-MMMM)",
+    doseMessage: "Choose new Dose number (1 or 2):",
+    ageMessage: "Choose the new age backet (18 - 44 or 45+):",
+    stateMessage: "Choose your new state of residence:",
+    districtMessage: "Choose your new district of residence:",
+    preferredVaccineMessage: "Choose your updated preferred vaccine(s):",
+    beneficiariesOtpMessage: "Please enter OTP for updated beneficiaries below:",
+    beneficiariesMessage: "Select the new beneficiaries for booking:",
+    bookingOtpMessage: "Please enter OTP for booking slot below:",
+    captchaMessage: "Please enter CAPTCHA code below to complete booking:"
+}
+
+module.exports.preferredVaccines = ["COVAXIN", "COVISHIELD"]

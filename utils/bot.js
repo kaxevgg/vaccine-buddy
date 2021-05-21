@@ -1,9 +1,16 @@
 var utilMethods = require("./utils");
-var messages = require('./messages').messages;
-var userModel = require("./userModel").userModel;
+var messages = require('./messages');
 var svgToPng = require('convert-svg-to-png');
+var bot = require("../config").bot;
+var users = require("../config").users;
 
-function sendInitialMessage (chatId, bot) {
+/***
+ * @description - Sends initial greeting message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ */
+
+function sendInitialMessage (chatId) {
     /*
         Escape the following characters with \\:
         . - ( ) !
@@ -12,15 +19,15 @@ function sendInitialMessage (chatId, bot) {
         `
     */
 
-    bot.sendMessage(chatId, messages.initialMessage, 
+    bot.sendMessage(chatId, messages.setupMessages.initialMessage, 
     {
         parse_mode: 'MarkdownV2'
     }).then(function (response) {
         console.log(response);
 
-        // Send phone nummber message
+        // Send phone number message
 
-        bot.sendMessage(chatId, messages.phoneNumberMessage, 
+        bot.sendMessage(chatId, messages.setupMessages.phoneNumberMessage, 
         {
             reply_markup: {
                 force_reply: true
@@ -36,8 +43,17 @@ function sendInitialMessage (chatId, bot) {
     })
 }
 
-function sendVaccinationDateMessage (chatId, bot) {
-    bot.sendMessage(chatId, messages.vaccinationDateMessage, 
+/***
+ * @description - Sends vaccination date message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendVaccinationDateMessage (chatId, isInitialSetup) {
+    var vaccinationDateMessage = isInitialSetup ? messages.setupMessages.vaccinationDateMessage : messages.commandMessages.vaccinationDateMessage;
+
+    bot.sendMessage(chatId, vaccinationDateMessage, 
         {
         reply_markup: {
             force_reply: true
@@ -49,19 +65,30 @@ function sendVaccinationDateMessage (chatId, bot) {
     })
 }
 
-function sendVaccinationDoseMessage (chatId, bot) {
-    bot.sendMessage(chatId, messages.doseMessage, 
+/***
+ * @description - Sends vaccination date dose number to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendVaccinationDoseMessage (chatId, isInitialSetup) {
+    var doseMessage = isInitialSetup ? messages.setupMessages.doseMessage : messages.commandMessages.doseMessage;
+
+    bot.sendMessage(chatId, doseMessage, 
         {
         reply_markup: {
             inline_keyboard: [
                 [
                     {text: "Dose 1", callback_data: JSON.stringify({
                         doseId: 1,
-                        bot_command: "/dose"
+                        bot_command: "/dose",
+                        isInitialSetup: isInitialSetup
                     })}, 
                     {text: "Dose 2", callback_data: JSON.stringify({
                         doseId: 2,
-                        bot_command: "/dose"
+                        bot_command: "/dose",
+                        isInitialSetup: isInitialSetup
                     })}
                 ]
             ]
@@ -73,19 +100,30 @@ function sendVaccinationDoseMessage (chatId, bot) {
     })
 }
 
-function sendAgeBracketMessage (chatId, bot) {
-    bot.sendMessage(chatId, messages.ageMessage, 
+/***
+ * @description - Sends age bracket message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendAgeBracketMessage (chatId, isInitialSetup) {
+    var ageMessage = isInitialSetup ? messages.setupMessages.ageMessage : messages.commandMessages.ageMessage;
+
+    bot.sendMessage(chatId, ageMessage, 
         {
         reply_markup: {
             inline_keyboard: [
                 [
                     {text: "18-44", callback_data: JSON.stringify({
                         minAge: 18,
-                        bot_command: "/age"
+                        bot_command: "/age",
+                        isInitialSetup: isInitialSetup
                     })}, 
                     {text: "45+", callback_data: JSON.stringify({
                         minAge: 45,
-                        bot_command: "/age"
+                        bot_command: "/age",
+                        isInitialSetup: isInitialSetup
                     })}
                 ]
             ]
@@ -97,18 +135,27 @@ function sendAgeBracketMessage (chatId, bot) {
     })
 }
 
-function sendStateSelectionMessage (chatId, bot) {
+/***
+ * @description - Sends state message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendStateSelectionMessage (chatId, isInitialSetup) {
+    var stateMessage = isInitialSetup ? messages.setupMessages.stateMessage : messages.commandMessages.stateMessage;
+
     utilMethods.getStates(function(response) {
         var states = response.states;
         var stateButtonOptions = [];
 
         states.map(function(state, index) {
-            stateButtonOptions.push({ text: state.state_name, callback_data: JSON.stringify({stateId: state.state_id, bot_command: "/state"})})
+            stateButtonOptions.push({ text: state.state_name, callback_data: JSON.stringify({stateId: state.state_id, bot_command: "/state", isInitialSetup: isInitialSetup})})
         });
 
         stateButtonOptions = utilMethods.createGroups(stateButtonOptions, Math.ceil(stateButtonOptions.length/2))
 
-        bot.sendMessage(chatId, messages.stateMessage, {
+        bot.sendMessage(chatId, stateMessage, {
         reply_markup: {
             inline_keyboard: stateButtonOptions
         }
@@ -120,18 +167,35 @@ function sendStateSelectionMessage (chatId, bot) {
     })
 }
 
-function sendDistrictSelectionMessage (chatId, stateId, bot) {
+/***
+ * @description - Sends district message to user
+ * @param chatId - Identifier for current chat
+ * @param stateId - Identifier for user's selected state
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendDistrictSelectionMessage (chatId, stateId, isInitialSetup) {
+    var districtMessage = isInitialSetup ? messages.setupMessages.districtMessage : messages.commandMessages.districtMessage;
+
     utilMethods.getDistricts(stateId, function(response) {
         var districts = response.districts;
         var districtButtonOptions = []
     
         districts.map(function(district, index) {
-          districtButtonOptions.push({ text: district.district_name, callback_data: JSON.stringify({districtId: district.district_id, bot_command: "/district"})})
+            districtButtonOptions.push({ 
+                text: district.district_name, 
+                callback_data: JSON.stringify({
+                    districtId: district.district_id, 
+                    bot_command: "/district", 
+                    isInitial: isInitialSetup
+                })
+            })
         });
   
         districtButtonOptions = utilMethods.createGroups(districtButtonOptions, Math.ceil(districtButtonOptions.length/2))
   
-        bot.sendMessage(chatId, messages.districtMessage, {
+        bot.sendMessage(chatId, districtMessage, {
           reply_markup: {
             inline_keyboard: districtButtonOptions
           }
@@ -143,24 +207,66 @@ function sendDistrictSelectionMessage (chatId, stateId, bot) {
     })
 }
 
-function sendPreferredVaccineMessage (chatId, bot) {
-    bot.sendPoll(chatId, messages.preferredVaccineMessage, messages.preferredVaccines, {
+/***
+ * @description - Sends preferred vaccine message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ * @param users - Instance of firestore collection 'users'
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendPreferredVaccineMessage (chatId, isInitialSetup) {
+    var preferredVaccineMessage = isInitialSetup ? messages.setupMessages.preferredVaccineMessage : messages.commandMessages.preferredVaccineMessage;
+
+    bot.sendPoll(chatId, preferredVaccineMessage, messages.preferredVaccines, {
         is_anonymous: false,
         allows_multiple_answers: true
     }).then(function(response) {
         var pollId = response.poll.id;
+
+        if (isInitialSetup) {
+            users.doc(chatId.toString()).update({
+                initialSetupPreferredVaccinesPollId: pollId
+            }).then(function(response) {
+                console.log(response);
+            });
+        } else {
+            users.doc(chatId.toString()).update({
+                updatedPreferredVaccinesPollId: pollId
+            }).then(function(response) {
+                console.log(response);
+            });
+        }
+
         console.log(response);
     }).catch(function(error) {
         console.error(error);
     })
 }
 
-function sendOTPMessage (chatId, phoneNumber, bot, callback) {
+/***
+ * @description - Sends beneficiary OTP message to user
+ * @param chatId - Identifier for current chat
+ * @param phoneNumber - Phone number of current user
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ * @function callback - Callback function for storing response
+ */
+
+function sendBeneficiaryOTPMessage (chatId, phoneNumber, isInitialSetup) {
+    var beneficiariesOtpMessage = isInitialSetup ? messages.setupMessages.beneficiariesOtpMessage : messages.commandMessages.beneficiariesOtpMessage;
+
     utilMethods.generateOTP(phoneNumber, function (response) {
-        callback(response.txnId);
+        var txnId = response.txnId;
+    
+        users.doc(chatId.toString()).update({
+            txnId: txnId
+        }).then(function(response) {
+            console.log(response);
+        });
     });
 
-    bot.sendMessage(chatId, messages.otpMessage, {
+    bot.sendMessage(chatId, beneficiariesOtpMessage, {
     reply_markup: {
         force_reply: true
     }
@@ -171,47 +277,224 @@ function sendOTPMessage (chatId, phoneNumber, bot, callback) {
     })
 }
 
-function sendBeneficiariesMessage (chatId, otp, txnId, bot) {
-    utilMethods.validateOTP(otp, txnId, function (response) {
-        var token = response.token;
+/***
+ * @description - Sends booking OTP message to user
+ * @param chatId - Identifier for current chat
+ * @param phoneNumber - Phone number of current user
+ * @param bot - Instance of Telegram bot
+ * @function callback - Callback function for storing response
+ */
 
-        userModel.userToken = token;
-
-        utilMethods.getBeneficiaries(token, function (beneficiariesResponse) {
-            var beneficiaries = beneficiariesResponse.beneficiaries;
-
-            userModel.beneficiaries = beneficiaries;
-
-            var beneficiariesPollOptions = []
-
-            beneficiaries.map(function(beneficiary) {
-                beneficiariesPollOptions.push(beneficiary.name);
-            })
-
-            bot.sendPoll(chatId, messages.beneficiariesMessage, beneficiariesPollOptions, {
-                is_anonymous: false,
-                allows_multiple_answers: true
-            }).then(function(response) {
-                var pollId = response.poll.id;
-                console.log(response);
-            }).catch(function(error) {
-                console.error(error);
-            })
+function sendBookingOTPMessage (chatId, phoneNumber) {
+    utilMethods.generateOTP(phoneNumber, function (response) {
+        var txnId = response.txnId;
+    
+        users.doc(chatId.toString()).update({
+            txnId: txnId
+        }).then(function(response) {
+        console.log(response);
         });
+    });
+
+    bot.sendMessage(chatId, messages.commandMessages.bookingOtpMessage, {
+    reply_markup: {
+        force_reply: true
+    }
+    }).then(function(response) {
+        console.log(response);
+    }).catch(function(error) {
+        console.error(error);
+    })
+}
+
+/***
+ * @description - Sends beneficiary selection message to user
+ * @param chatId - Identifier for current chat
+ * @param otp - OTP entered by user
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+function sendBeneficiariesMessage (chatId, otp, isInitialSetup) {
+    var beneficiariesMessage = isInitialSetup ? messages.setupMessages.beneficiariesMessage : messages.commandMessages.beneficiariesMessage;
+
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var txnId = response.data().txnId;
+
+            utilMethods.validateOTP(otp, txnId, function (response) {
+                var token = response.token;
+        
+                users.doc(chatId.toString()).update({
+                    token: token
+                }).then(function(response) {
+                    console.log(response);
+                });
+        
+                utilMethods.getBeneficiaries(token, function (beneficiariesResponse) {
+                    var beneficiaries = beneficiariesResponse.beneficiaries;
+        
+                    users.doc(chatId.toString()).update({
+                        allBeneficiaries: beneficiaries
+                    }).then(function(response) {
+                        console.log(response);
+                    });
+        
+                    var beneficiariesPollOptions = []
+        
+                    beneficiaries.map(function(beneficiary) {
+                        beneficiariesPollOptions.push(beneficiary.name);
+                    })
+        
+                    bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
+                        is_anonymous: false,
+                        allows_multiple_answers: true
+                    }).then(function(response) {
+                        var pollId = response.poll.id;
+        
+                        if (isInitialSetup) {
+                            users.doc(chatId.toString()).update({
+                                initialSetupBeneficiariesPollId: pollId
+                            }).then(function(response) {
+                                console.log(response);
+                            });
+                        } else {
+                            users.doc(chatId.toString()).update({
+                                updatedBeneficiariesPollId: pollId
+                            }).then(function(response) {
+                                console.log(response);
+                            });
+                        }
+        
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    })
+                });
+            });
+        }
     });
 }
 
-function sendCaptcha(chatId, userToken, bot) {
+function searchSlots(chatId, otp) {
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var user = response.data();
+
+            utilMethods.validateOTP(otp, user.txnId, function (response) {
+                var token = response.token;
+        
+                users.doc(chatId.toString()).update({
+                    token: token
+                }).then(function(response) {
+                    console.log(response);
+                });
+
+                utilMethods.searchSlots(user, function (slotResponse) {
+                    console.log(slotResponse);
+
+                    if (slotResponse.success) {
+                        sendCaptcha(chatId, token);
+
+                        users.doc(chatId.toString()).update({
+                            availableSlot: slotResponse.data
+                        }).then(function(response) {
+                            console.log(response);
+                        });
+                    }
+                });
+            })
+        }
+    })
+} 
+
+function initiateBookingSlot(chatId, captcha) {
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var slotData = response.data().availableSlot;
+
+            slotData['captcha'] = captcha;
+
+            utilMethods.bookSlot(slotData, response.data().token, function(bookingResponse) {
+                var appointmentId = bookingResponse.appointment_confirmation_no;
+
+                var bookingConfirmationMessage = `Hooray\\! Your appointment has been scheduled. Your appointment number is *${appointmentId}*\\. Please check the Cowin website for further details\\.`
+
+                bot.sendMessage(chatId, bookingConfirmationMessage, {
+                    parse_mode: 'MarkdownV2'
+                })
+                .then(function(response) {
+                    console.log(response);
+                }).catch(function(error) {
+                    console.error(error);
+                });
+
+                users.doc(chatId.toString()).update({
+                    appointmentId: appointmentId
+                }).then(function(response) {
+                    console.log(response);
+                });
+
+                // Send PDF Response
+                /*
+                utilMethods.downloadAppointmentPDF(appointmentId, response.data().token, function(appointmentPdfResponse) {
+                    console.log(appointmentPdfResponse);
+
+                    // bot.sendDocument(chatId, appointmentPdfResponse)
+                    // .then(function(response) {
+                    //     console.log(response);
+                    // }).catch(function(error) {
+                    //     console.error(error);
+                    // });
+                })*/
+            })
+        }
+    })
+}
+
+/***
+ * @description - Sends captcha image to user to complete appointment booking
+ * @param chatId - Identifier for current chat
+ * @param userToken - Authentication token for current user
+ * @param bot - Instance of Telegram bot
+ */
+
+function sendCaptcha(chatId, userToken) {
     utilMethods.getCaptcha(userToken, function(response) {
         var captcha = response.captcha;
-        svgToPng.convert(captcha).then(function(response) {
-            bot.sendPhoto(chatId, response)
+        svgToPng.convert(captcha).then(function(responseCaptcha) {
+            bot.sendPhoto(chatId, responseCaptcha, {
+                caption: messages.commandMessages.captchaMessage,
+                reply_markup: {
+                    force_reply: true
+                }
+            })
             .then(function(response) {
                 console.log(response);
             }).catch(function(error) {
                 console.error(error);
             })
         })
+    })
+} 
+
+/***
+ * @description - Sends initial setup completion message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ */
+
+function sendSetupCompleteMessage(chatId) {
+    bot.sendMessage(chatId, messages.setupMessages.setupCompleteMessage)
+    .then(function(response) {
+        console.log(response);
+    }).catch(function(error) {
+        console.error(error);
     })
 } 
 
@@ -223,7 +506,11 @@ module.exports = {
     sendStateSelectionMessage,
     sendDistrictSelectionMessage,
     sendPreferredVaccineMessage,
-    sendOTPMessage,
+    sendBeneficiaryOTPMessage,
+    sendBookingOTPMessage,
     sendBeneficiariesMessage,
-    sendCaptcha
+    searchSlots,
+    initiateBookingSlot,
+    sendCaptcha,
+    sendSetupCompleteMessage
 }
