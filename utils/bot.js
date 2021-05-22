@@ -404,7 +404,7 @@ function searchSlots(chatId, otp) {
                     token: token
                 }).then(function(response) {
                     console.log(response);
-                    utilMethods.searchSlots(chatId, user, 1)
+                    utilMethods.searchSlots(chatId, user, 1, null)
                 });
             })
         }
@@ -421,22 +421,31 @@ function initiateBookingSlot(chatId, captcha) {
             slotData['captcha'] = captcha;
 
             utilMethods.bookSlot(slotData, response.data().token, function(bookingResponse) {
-                var appointmentId = bookingResponse.appointment_confirmation_no;
+                if ('appointment_confirmation_no' in bookingResponse) {
+                    var bookingConfirmationMessage = "Hooray! Your appointment has been scheduled. Please check the Cowin Website for further details."
 
-                var bookingConfirmationMessage = "Hooray! Your appointment has been scheduled. Please check the Cowin Website for further details."
+                    bot.sendMessage(chatId, bookingConfirmationMessage)
+                    .then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
 
-                bot.sendMessage(chatId, bookingConfirmationMessage)
-                .then(function(response) {
-                    console.log(response);
-                }).catch(function(error) {
-                    console.error(error);
-                });
+                    users.doc(chatId.toString()).update({
+                        appointmentId: bookingResponse.appointment_confirmation_no
+                    }).then(function(response) {
+                        console.log(response);
+                    });
+                } else {
+                    bot.sendMessage(chatId, messages.commandMessages.bookingErrorMessage)
+                    .then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
 
-                users.doc(chatId.toString()).update({
-                    appointmentId: appointmentId
-                }).then(function(response) {
-                    console.log(response);
-                });
+                    utilMethods.searchSlots(chatId, response.data(), 1, null)
+                }
 
                 // Send PDF Response
                 /*

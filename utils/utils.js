@@ -3,6 +3,7 @@ var crypto = require('crypto');
 var bot = require("../config").bot;
 var users = require("../config").users;
 var svgToPng = require('convert-svg-to-png');
+var messages = require("./messages");
 
 // Util functions
 
@@ -33,7 +34,7 @@ function generateOTP(mobile, callback) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            "secret": "U2FsdGVkX1+VTlP0So1QxL6tbZmIty6lx41dE0iN09YJTzJwqYwC06FCG90Sw8h7qgJhN+jW+TGYvKPDXOEv0Q==",
+            "secret": "U2FsdGVkX19dS0NTa5FVqCDeEBGQq9PY+Ximiwih6A07Cit81yEl+gfjm5Chv7BJqIk0ehM3B07f64UEnIQGsQ==",
             "mobile": mobile
         })
     };
@@ -138,91 +139,124 @@ function getDistricts(stateId, callback) {
  * @function callback - Callback function for storing response
  */
 
-function searchSlots(chatId, user, trialNumber) {
+function searchSlots(chatId, user, trialNumber, messageId) {
     var options = {
         'method': 'GET',
-        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`
         },
     };
     request(options, function (error, response) {
-        if (error) throw new Error(error);
-        var centers = JSON.parse(response.body).centers;
+        if (error || response.body == 'Unauthenticated access!') {
+            console.error(error);
 
-        var trials = trialNumber;
-        var slotFound = false;
-        var slotData;
-        var sessionDetails;
+            bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+            .then(function(response) {
+                // console.log(response);
+            }).catch (function (error) {
+                console.error(error);
+            });
+        } else {
+            var centers = JSON.parse(response.body).centers;
+            var trials = trialNumber;
+            var slotFound = false;
+            var slotData;
+            var sessionDetails;
+            var centerDetails;
 
-        for (i in centers) {
-            center = centers[i];
-            for (j in center.sessions) {
-                session = center.sessions[j];
+            for (i in centers) {
+                center = centers[i];
+                for (j in center.sessions) {
+                    session = center.sessions[j];
 
-                if (user.dose == 1) {
-                    if (!slotFound && session.available_capacity_dose1 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
-                        console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
+                    if (parseInt(user.dose) == 1) {
+                        if (!slotFound && session.available_capacity_dose1 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
+                            console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
 
-                        slotFound = true;
-    
-                        slotData = {
-                            center_id: center.center_id,
-                            session_id: session.session_id,
-                            dose: user.dose,
-                            slot: session.slots[0],
-                            beneficiaries: user.beneficiaryIds
+                            slotFound = true;
+        
+                            slotData = {
+                                center_id: center.center_id,
+                                session_id: session.session_id,
+                                dose: user.dose,
+                                slot: session.slots[0],
+                                beneficiaries: user.beneficiaryIds
+                            }
+        
+                            sessionDetails = session;
+                            centerDetails = center;
                         }
-    
-                        sessionDetails = session;
-                    }
-                } else if (user.dose == 2) {
-                    if (!slotFound && session.available_capacity_dose2 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
-                        console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
+                    } else if (parseInt(user.dose) == 2) {
+                        if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
+                            console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
 
-                        slotFound = true;
-    
-                        slotData = {
-                            center_id: center.center_id,
-                            session_id: session.session_id,
-                            dose: user.dose,
-                            slot: session.slots[0],
-                            beneficiaries: user.beneficiaryIds
+                            slotFound = true;
+        
+                            slotData = {
+                                center_id: center.center_id,
+                                session_id: session.session_id,
+                                dose: parseInt(user.dose),
+                                slot: session.slots[0],
+                                beneficiaries: user.beneficiaryIds
+                            }
+        
+                            sessionDetails = session;
+                            centerDetails = center;
                         }
-    
-                        sessionDetails = session;
                     }
                 }
             }
-        }
 
-        if (!slotFound) {
-            trials += 1;
-            if (trials <= 60) {
-                bot.sendMessage(chatId, "No slots found. Searching again . . .")
-                .then(function(response) {
-                    // console.log(response);
-                }).catch (function (error) {
-                    console.error(error);
-                });
-                console.log("No slots found. Searching again . . .");
-                setTimeout(function() {
-                    searchSlots(chatId, user, trials);
-                }, 2000);
+            if (!slotFound) {
+                console.log(`Check No: ${trials}`)
+                trials += 1;
+
+                if (trials <= 300) {
+                    if (messageId == null) {
+                        bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
+                        .then(function(response) {
+                            // console.log(response);
+                            console.log("No slots found. Searching again . . .");
+    
+                            setTimeout(function() {
+                                searchSlots(chatId, user, trials, response.message_id);
+                            }, 3000);
+                        }).catch (function (error) {
+                            console.error(error);
+                        });
+                    } else {
+                        bot.editMessageText(`No slots found! Searching again . . . (Attempt ${trials - 1})`, {
+                            message_id: messageId,
+                            chat_id: chatId 
+                        }).then(function(response) {
+
+                            console.log("No slots found. Searching again . . .");
+
+                            setTimeout(function() {
+                                searchSlots(chatId, user, trials, response.message_id);
+                            }, 3000);
+                        }).catch(function(error) {
+                            console.error(error);
+                        })
+                    }
+                } else {
+                    bot.sendMessage(chatId, "No slots found. Try again later.")
+                    
+                    console.log("No slots found. Try again later.");
+                }
             } else {
-                bot.sendMessage(chatId, "No slots found. Try again later.")
-                
-                console.log("No slots found. Try again later.");
-            }
-        } else {
-            sendCaptcha(chatId, user.token);
+                sendCaptcha(chatId, user.token);
 
-            users.doc(chatId.toString()).update({
-                availableSlot: slotData,
-                availableSlotDetails: sessionDetails
-            }).then(function(response) {
-                console.log(response);
-            });
+                users.doc(chatId.toString()).update({
+                    availableSlot: slotData,
+                    availableSessionDetails: sessionDetails,
+                    availableCenterDetails: centerDetails
+                }).then(function(response) {
+                    console.log(response);
+                });
+            }
         }
     });
 }
@@ -239,6 +273,7 @@ function bookSlot(slotData, userToken, callback) {
     };
     request(options, function (error, response) {
         if (error) throw new Error(error);
+        console.log(response);
         callback(JSON.parse(response.body));
     });
 }
@@ -268,21 +303,23 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
  */
 
  function sendCaptcha(chatId, userToken) {
-    getCaptcha(userToken, function(response) {
-        var captcha = response.captcha;
-        svgToPng.convert(captcha).then(function(responseCaptcha) {
-            bot.sendPhoto(chatId, responseCaptcha, {
-                caption: messages.commandMessages.captchaMessage,
-                reply_markup: {
-                    force_reply: true
-                }
+    getCaptcha(chatId, userToken, function(response) {
+        if (!response.error) {
+            var captcha = response.captchaData.captcha;
+            svgToPng.convert(captcha).then(function(responseCaptcha) {
+                bot.sendPhoto(chatId, responseCaptcha, {
+                    caption: messages.commandMessages.captchaMessage,
+                    reply_markup: {
+                        force_reply: true
+                    }
+                })
+                .then(function(response) {
+                    console.log(response);
+                }).catch(function(error) {
+                    console.error(error);
+                })
             })
-            .then(function(response) {
-                console.log(response);
-            }).catch(function(error) {
-                console.error(error);
-            })
-        })
+        }
     })
 } 
 
@@ -292,7 +329,7 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
  * @function callback - Callback function for storing response
  */
 
-function getCaptcha(userToken, callback) {
+function getCaptcha(chatId, userToken, callback) {
     var options = {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/auth/getRecaptcha',
@@ -303,7 +340,18 @@ function getCaptcha(userToken, callback) {
     };
     request(options, function (error, response) {
         if (error) throw new Error(error);
-        callback(JSON.parse(response.body))
+        if (response.body == 'Unauthenticated access!') {
+            bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+            .then(function(response) {
+                console.log(response);
+            }).catch (function (error) {
+                console.error(error);
+            });
+            callback({error: true})
+        } else {
+            console.log(response);
+            callback({error: false, captchaData: JSON.parse(response.body)})
+        }
     });
 }
 
