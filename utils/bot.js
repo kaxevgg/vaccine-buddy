@@ -404,65 +404,12 @@ function searchSlots(chatId, otp) {
                     token: token
                 }).then(function(response) {
                     console.log(response);
-                    utilMethods.searchSlots(chatId, user, 1, null)
+                    utilMethods.sendCaptcha(chatId, token);
                 });
             })
         }
     })
 } 
-
-function initiateBookingSlot(chatId, captcha) {
-    users.doc(chatId.toString()).get().then(function(response) {
-        if (!response.exists) {
-            console.error("No user found")
-        } else {
-            var slotData = response.data().availableSlot;
-
-            slotData['captcha'] = captcha;
-
-            utilMethods.bookSlot(slotData, response.data().token, function(bookingResponse) {
-                if ('appointment_confirmation_no' in bookingResponse) {
-                    var bookingConfirmationMessage = "Hooray! Your appointment has been scheduled. Please check the Cowin Website for further details."
-
-                    bot.sendMessage(chatId, bookingConfirmationMessage)
-                    .then(function(response) {
-                        console.log(response);
-                    }).catch(function(error) {
-                        console.error(error);
-                    });
-
-                    users.doc(chatId.toString()).update({
-                        appointmentId: bookingResponse.appointment_confirmation_no
-                    }).then(function(response) {
-                        console.log(response);
-                    });
-                } else {
-                    bot.sendMessage(chatId, messages.commandMessages.bookingErrorMessage)
-                    .then(function(response) {
-                        console.log(response);
-                    }).catch(function(error) {
-                        console.error(error);
-                    });
-
-                    utilMethods.searchSlots(chatId, response.data(), 1, null)
-                }
-
-                // Send PDF Response
-                /*
-                utilMethods.downloadAppointmentPDF(appointmentId, response.data().token, function(appointmentPdfResponse) {
-                    console.log(appointmentPdfResponse);
-
-                    // bot.sendDocument(chatId, appointmentPdfResponse)
-                    // .then(function(response) {
-                    //     console.log(response);
-                    // }).catch(function(error) {
-                    //     console.error(error);
-                    // });
-                })*/
-            })
-        }
-    })
-}
 
 /***
  * @description - Sends initial setup completion message to user
@@ -491,6 +438,5 @@ module.exports = {
     sendBookingOTPMessage,
     sendBeneficiariesMessage,
     searchSlots,
-    initiateBookingSlot,
     sendSetupCompleteMessage
 }

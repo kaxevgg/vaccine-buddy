@@ -187,7 +187,8 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                                 session_id: session.session_id,
                                 dose: parseInt(user.dose),
                                 slot: session.slots[0],
-                                beneficiaries: user.beneficiaryIds
+                                beneficiaries: user.beneficiaryIds,
+                                captcha: user.captcha
                             }
         
                             sessionDetails = session;
@@ -204,7 +205,8 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                                 session_id: session.session_id,
                                 dose: parseInt(user.dose),
                                 slot: session.slots[0],
-                                beneficiaries: user.beneficiaryIds
+                                beneficiaries: user.beneficiaryIds,
+                                captcha: user.captcha
                             }
         
                             sessionDetails = session;
@@ -252,18 +254,65 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                     console.log("No slots found. Try again later.");
                 }
             } else {
-                sendCaptcha(chatId, user.token);
-
                 users.doc(chatId.toString()).update({
                     availableSlot: slotData,
                     availableSessionDetails: sessionDetails,
                     availableCenterDetails: centerDetails
                 }).then(function(response) {
                     console.log(response);
+
+                    initiateBookingSlot(chatId);
                 });
             }
         }
     });
+}
+
+function initiateBookingSlot(chatId) {
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var slotData = response.data().availableSlot;
+
+            bookSlot(slotData, response.data().token, function(bookingResponse) {
+                if ('appointment_confirmation_no' in JSON.parse(bookingResponse.body)) {
+                    var bookingConfirmationMessage = `Hooray! Your appointment has been scheduled at ${response.data().availableCenterDetails.name} in ${response.data().availableCenterDetails.district_name} on ${response.data().availableSessionDetails.date} at ${response.data().availableSlot.slot}. Please check the Cowin Website for further details.`
+
+                    bot.sendMessage(chatId, bookingConfirmationMessage)
+                    .then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+
+                    users.doc(chatId.toString()).update({
+                        appointmentId: JSON.parse(bookingResponse.body).appointment_confirmation_no
+                    }).then(function(response) {
+                        console.log(response);
+                    });
+                } else if (bookingResponse == 'Unauthenticated access!') {
+                    console.log("Unauthenticated access");
+
+                    bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+                    .then(function(response) {
+                        // console.log(response);
+                    }).catch (function (error) {
+                        console.error(error);
+                    });
+                } else {
+                    bot.sendMessage(chatId, messages.commandMessages.bookingErrorMessage)
+                    .then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+
+                    searchSlots(chatId, response.data(), 1, null)
+                }
+            })
+        }
+    })
 }
 
 function bookSlot(slotData, userToken, callback) {
@@ -280,7 +329,7 @@ function bookSlot(slotData, userToken, callback) {
     request(options, function (error, response) {
         if (error) throw new Error(error);
         console.log(response);
-        callback(JSON.parse(response.body));
+        callback(response);
     });
 }
 

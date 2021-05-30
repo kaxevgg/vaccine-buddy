@@ -44,7 +44,7 @@ module.exports.commandMessages = {
     beneficiariesMessage: "Select the new beneficiaries for booking:",
     bookingOtpMessage: "Please enter OTP for booking slot below:",
     bookingErrorMessage: "There was an error in booking the slot. Starting search again . . .",
-    captchaMessage: "Slot is available. Please enter CAPTCHA code below to complete booking:"
+    captchaMessage: "Please enter CAPTCHA code below:"
 }
 
 module.exports.preferredVaccines = ["COVAXIN", "COVISHIELD"]

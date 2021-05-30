@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var botMethods = require("../utils/bot");
+var utilMethods = require("../utils/utils");
 var messages = require("../utils/messages");
 var bot = require("../config").bot;
 var users = require("../config").users;
@@ -134,10 +135,25 @@ bot.on("message", function(message) {
       botMethods.searchSlots(chatId, otp);
     } else if (originalMessage.caption == messages.commandMessages.captchaMessage) {
       var captcha = message.text;
-      botMethods.initiateBookingSlot(chatId, captcha);
+
+      users.doc(chatId.toString()).update({
+        captcha: captcha
+      }).then(function(response) {
+        console.log(response);
+
+        users.doc(chatId.toString()).get().then(function(response) {
+          if (!response.exists) {
+            console.error("No user found")
+          } else {
+            utilMethods.searchSlots(chatId, response.data(), 1, null)
+          }
+        });
+      });
     } 
   }
 })
+
+// Poll Answer
 
 bot.on("poll_answer", function(poll) {
   var pollId = poll.poll_id;
