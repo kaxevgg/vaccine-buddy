@@ -58,7 +58,8 @@ function validateOTP(otp, txnId, callback) {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/auth/validateMobileOtp',
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
         body: JSON.stringify({
             "otp": hashedOtp,
@@ -84,7 +85,8 @@ function getBeneficiaries(userToken, callback) {
         'url': 'https://cdn-api.co-vin.in/api/v2/appointment/beneficiaries',
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -103,7 +105,8 @@ function getStates(callback) {
         'method': 'GET',
         'url': 'https://cdn-api.co-vin.in/api/v2/admin/location/states',
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -123,7 +126,8 @@ function getDistricts(stateId, callback) {
         'method': 'GET',
         'url': `https://cdn-api.co-vin.in/api/v2/admin/location/districts/${stateId}`,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -145,7 +149,8 @@ function searchSlots(chatId, user, trialNumber, messageId) {
         'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${user.token}`
+            'Authorization': `Bearer ${user.token}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -180,7 +185,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                             slotData = {
                                 center_id: center.center_id,
                                 session_id: session.session_id,
-                                dose: user.dose,
+                                dose: parseInt(user.dose),
                                 slot: session.slots[0],
                                 beneficiaries: user.beneficiaryIds
                             }
@@ -213,7 +218,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                 console.log(`Check No: ${trials}`)
                 trials += 1;
 
-                if (trials <= 300) {
+                if (trials <= 200) {
                     if (messageId == null) {
                         bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
                         .then(function(response) {
@@ -222,7 +227,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
     
                             setTimeout(function() {
                                 searchSlots(chatId, user, trials, response.message_id);
-                            }, 3000);
+                            }, 5000);
                         }).catch (function (error) {
                             console.error(error);
                         });
@@ -236,7 +241,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
 
                             setTimeout(function() {
                                 searchSlots(chatId, user, trials, response.message_id);
-                            }, 3000);
+                            }, 5000);
                         }).catch(function(error) {
                             console.error(error);
                         })
@@ -267,7 +272,8 @@ function bookSlot(slotData, userToken, callback) {
         'url': 'https://cdn-api.co-vin.in/api/v2/appointment/schedule',
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
         'body': JSON.stringify(slotData)
     };
@@ -286,7 +292,8 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
         'url': `https://cdn-api.co-vin.in/api/v2/appointment/appointmentslip/download?appointment_id=${appointmentId}`,
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         }
     };
     request(options, function (error, response) {
@@ -335,7 +342,8 @@ function getCaptcha(chatId, userToken, callback) {
         'url': 'https://cdn-api.co-vin.in/api/v2/auth/getRecaptcha',
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
