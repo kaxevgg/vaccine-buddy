@@ -146,23 +146,26 @@ function getDistricts(stateId, callback) {
 
 function searchSlots(chatId, user, trialNumber, messageId) {
     var existingDate = moment(user.vaccinationDate, "DD-MM-YYYY");
-    var newDate = moment().add(1, 'days')
+    var newDate = moment();
 
     var vaccinationDate;
 
     if (newDate > existingDate) {
-        vaccinationDate = (newDate.date() < 10 ? "0" + newDate.date() : newDate.date()) + "-" + (newDate.month() < 10 ? "0" + newDate.month() : newDate.month()) + "-" + newDate.year()
+        vaccinationDate = (newDate.date() < 10 ? "0" + newDate.date() : newDate.date()) + "-" + ((newDate.month() + 1) < 10 ? "0" + (newDate.month() + 1) : (newDate.month() + 1)) + "-" + newDate.year()
     } else {
         vaccinationDate = user.vaccinationDate;
     }
 
     var options = {
         'method': 'GET',
-        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/findByDistrict?district_id=${user.districtId}&date=${vaccinationDate}`,
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${user.districtId}&date=${vaccinationDate}`,
         'headers': {
+            'Accept-Language': 'en_IN',
+            'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${user.token}`,
-            'Origin': 'https://selfregistration.cowin.gov.in'
+            'Origin': 'https://selfregistration.cowin.gov.in',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
         },
     };
     request(options, function (error, response) {
@@ -176,46 +179,66 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                 console.error(error);
             });
         } else {
-            var sessions = JSON.parse(response.body).sessions;
+            var centers = JSON.parse(response.body).centers;
+            console.log("Number of centers: ", centers.length);
+
             var trials = trialNumber;
             var slotFound = false;
             var slotData;
             var sessionDetails;
+            var centerDetails;
 
-            for (i in sessions) {
-                session = sessions[i];
+            for (i in centers) {
+                var center = centers[i];
 
-                if (parseInt(user.dose) == 1) {
-                    if (!slotFound && session.available_capacity_dose1 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
-                        console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
+                for (j in center.sessions) {
+                    var session = center.sessions[j];
 
-                        slotFound = true;
+                    // console.log("------SESSION START--------")
+                    // console.log(!slotFound);
+                    // console.log(session.available_capacity_dose1 >= user.beneficiaryIds.length);
+                    // console.log(session.min_age_limit == parseInt(user.minAge));
+                    // console.log(user.preferredVaccines.includes(session.vaccine))
+                    // console.log(!slotFound && session.available_capacity_dose1 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine))
+                    // console.log("------SESSION END--------")
+
+                    
+                    if (parseInt(user.dose) == 1) {
+                        if (!slotFound && (session.available_capacity_dose1 >= user.beneficiaryIds.length) && (session.min_age_limit == parseInt(user.minAge)) && (user.preferredVaccines.includes(session.vaccine))) {
+                            console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
     
-                        slotData = {
-                            session_id: session.session_id,
-                            dose: parseInt(user.dose),
-                            slot: session.slots[0],
-                            beneficiaries: user.beneficiaryIds,
-                            captcha: user.captcha
+                            slotFound = true;
+        
+                            slotData = {
+                                center_id: center.center_id,
+                                session_id: session.session_id,
+                                dose: parseInt(user.dose),
+                                slot: session.slots[0],
+                                beneficiaries: user.beneficiaryIds,
+                                captcha: user.captcha
+                            }
+        
+                            sessionDetails = session;
+                            centerDetails = center;
                         }
+                    } else if (parseInt(user.dose) == 2) {
+                        if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
+                            console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
     
-                        sessionDetails = session;
-                    }
-                } else if (parseInt(user.dose) == 2) {
-                    if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
-                        console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
-
-                        slotFound = true;
-    
-                        slotData = {
-                            session_id: session.session_id,
-                            dose: parseInt(user.dose),
-                            slot: session.slots[0],
-                            beneficiaries: user.beneficiaryIds,
-                            captcha: user.captcha
+                            slotFound = true;
+        
+                            slotData = {
+                                center_id: center.center_id,
+                                session_id: session.session_id,
+                                dose: parseInt(user.dose),
+                                slot: session.slots[0],
+                                beneficiaries: user.beneficiaryIds,
+                                captcha: user.captcha
+                            }
+        
+                            sessionDetails = session;
+                            centerDetails = center;
                         }
-    
-                        sessionDetails = session;
                     }
                 }
             }
@@ -224,7 +247,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                 console.log(`Check No: ${trials}`)
                 trials += 1;
 
-                if (trials <= 200) {
+                if (trials <= 400) {
                     if (messageId == null) {
                         bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
                         .then(function(response) {
@@ -233,7 +256,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
     
                             setTimeout(function() {
                                 searchSlots(chatId, user, trials, response.message_id);
-                            }, 5000);
+                            }, 3000);
                         }).catch (function (error) {
                             console.error(error);
                         });
@@ -247,13 +270,13 @@ function searchSlots(chatId, user, trialNumber, messageId) {
 
                             setTimeout(function() {
                                 searchSlots(chatId, user, trials, response.message_id);
-                            }, 5000);
+                            }, 3000);
                         }).catch(function(error) {
                             console.error(error);
                         })
                     }
                 } else {
-                    bot.sendMessage(chatId, "No slots found. Try again later.")
+                    bot.sendMessage(chatId, "No slots found. Try again later. Press /book to search again.")
                     
                     console.log("No slots found. Try again later.");
                 }
@@ -261,6 +284,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                 users.doc(chatId.toString()).update({
                     availableSlot: slotData,
                     availableSessionDetails: sessionDetails,
+                    availableCenterDetails: centerDetails
                 }).then(function(response) {
                     console.log(response);
 
@@ -323,9 +347,12 @@ function bookSlot(slotData, userToken, callback) {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/appointment/schedule',
         'headers': {
+            'Accept-Language': 'en_IN',
+            'Accept': 'application/json',
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${userToken}`,
-            'Origin': 'https://selfregistration.cowin.gov.in'
+            'Origin': 'https://selfregistration.cowin.gov.in',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
         },
         'body': JSON.stringify(slotData)
     };
