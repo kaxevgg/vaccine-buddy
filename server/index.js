@@ -1,6 +1,7 @@
 var express = require('express');
 var router = express.Router();
 var botMethods = require("../utils/bot");
+var utilMethods = require("../utils/utils");
 var messages = require("../utils/messages");
 var bot = require("../config").bot;
 var users = require("../config").users;
@@ -29,9 +30,7 @@ bot.on("message", function(message) {
   users.doc(chatId.toString()).get().then(function(response) {
     if (!response.exists) {
       users.doc(chatId.toString()).set({
-        first_name: message.from.first_name,
-        last_name: message.from.last_name,
-        username: message.from.username
+        first_name: message.from.first_name
       }).then(function(response) {
         console.log(response);
       })
@@ -136,10 +135,25 @@ bot.on("message", function(message) {
       botMethods.searchSlots(chatId, otp);
     } else if (originalMessage.caption == messages.commandMessages.captchaMessage) {
       var captcha = message.text;
-      botMethods.initiateBookingSlot(chatId, captcha);
+
+      users.doc(chatId.toString()).update({
+        captcha: captcha
+      }).then(function(response) {
+        console.log(response);
+
+        users.doc(chatId.toString()).get().then(function(response) {
+          if (!response.exists) {
+            console.error("No user found")
+          } else {
+            utilMethods.searchSlots(chatId, response.data(), 1, null)
+          }
+        });
+      });
     } 
   }
 })
+
+// Poll Answer
 
 bot.on("poll_answer", function(poll) {
   var pollId = poll.poll_id;
@@ -252,6 +266,8 @@ bot.on("callback_query", function(query) {
 
     if (callbackQueryData.isInitialSetup) {
       botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, true)
+    } else {
+      botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, false)
     }
   } else if (callbackQueryData.bot_command == "/district") {
     var districtId = callbackQueryData.districtId;
@@ -266,6 +282,10 @@ bot.on("callback_query", function(query) {
       botMethods.sendPreferredVaccineMessage(query.message.chat.id, true)
     }
   }
+})
+
+router.get('/', function(req, res, next) {
+  res.send("Hello");
 })
 
 module.exports = router;

@@ -1,6 +1,5 @@
 var utilMethods = require("./utils");
 var messages = require('./messages');
-var svgToPng = require('convert-svg-to-png');
 var bot = require("../config").bot;
 var users = require("../config").users;
 
@@ -347,30 +346,44 @@ function sendBeneficiariesMessage (chatId, otp, isInitialSetup) {
                         beneficiariesPollOptions.push(beneficiary.name);
                     })
         
-                    bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
-                        is_anonymous: false,
-                        allows_multiple_answers: true
-                    }).then(function(response) {
-                        var pollId = response.poll.id;
-        
-                        if (isInitialSetup) {
-                            users.doc(chatId.toString()).update({
-                                initialSetupBeneficiariesPollId: pollId
-                            }).then(function(response) {
-                                console.log(response);
-                            });
-                        } else {
-                            users.doc(chatId.toString()).update({
-                                updatedBeneficiariesPollId: pollId
-                            }).then(function(response) {
-                                console.log(response);
-                            });
-                        }
-        
-                        console.log(response);
-                    }).catch(function(error) {
-                        console.error(error);
-                    })
+                    if (beneficiariesPollOptions.length > 1) {
+                        bot.sendPoll(chatId, beneficiariesMessage, beneficiariesPollOptions, {
+                            is_anonymous: false,
+                            allows_multiple_answers: true
+                        }).then(function(response) {
+                            var pollId = response.poll.id;
+            
+                            if (isInitialSetup) {
+                                users.doc(chatId.toString()).update({
+                                    initialSetupBeneficiariesPollId: pollId
+                                }).then(function(response) {
+                                    console.log(response);
+                                });
+                            } else {
+                                users.doc(chatId.toString()).update({
+                                    updatedBeneficiariesPollId: pollId
+                                }).then(function(response) {
+                                    console.log(response);
+                                });
+                            }
+            
+                            console.log(response);
+                        }).catch(function(error) {
+                            console.error(error);
+                        })
+                    } else if (beneficiariesPollOptions.length == 1) {
+                        var beneficiaryIds = [];
+
+                        beneficiaries.map(function(beneficiary) {
+                            beneficiaryIds.push(beneficiary.beneficiary_reference_id)
+                        })
+
+                        users.doc(chatId.toString()).update({
+                            beneficiaryIds: beneficiaryIds
+                        }).then(function(response) {
+                            console.log(response);
+                        });
+                    }
                 });
             });
         }
@@ -391,93 +404,10 @@ function searchSlots(chatId, otp) {
                     token: token
                 }).then(function(response) {
                     console.log(response);
-                });
-
-                utilMethods.searchSlots(user, function (slotResponse) {
-                    console.log(slotResponse);
-
-                    if (slotResponse.success) {
-                        sendCaptcha(chatId, token);
-
-                        users.doc(chatId.toString()).update({
-                            availableSlot: slotResponse.data
-                        }).then(function(response) {
-                            console.log(response);
-                        });
-                    }
+                    utilMethods.sendCaptcha(chatId, token);
                 });
             })
         }
-    })
-} 
-
-function initiateBookingSlot(chatId, captcha) {
-    users.doc(chatId.toString()).get().then(function(response) {
-        if (!response.exists) {
-            console.error("No user found")
-        } else {
-            var slotData = response.data().availableSlot;
-
-            slotData['captcha'] = captcha;
-
-            utilMethods.bookSlot(slotData, response.data().token, function(bookingResponse) {
-                var appointmentId = bookingResponse.appointment_confirmation_no;
-
-                var bookingConfirmationMessage = "Hooray! Your appointment has been scheduled. Please check the Cowin Website for further details."
-
-                bot.sendMessage(chatId, bookingConfirmationMessage)
-                .then(function(response) {
-                    console.log(response);
-                }).catch(function(error) {
-                    console.error(error);
-                });
-
-                users.doc(chatId.toString()).update({
-                    appointmentId: appointmentId
-                }).then(function(response) {
-                    console.log(response);
-                });
-
-                // Send PDF Response
-                /*
-                utilMethods.downloadAppointmentPDF(appointmentId, response.data().token, function(appointmentPdfResponse) {
-                    console.log(appointmentPdfResponse);
-
-                    // bot.sendDocument(chatId, appointmentPdfResponse)
-                    // .then(function(response) {
-                    //     console.log(response);
-                    // }).catch(function(error) {
-                    //     console.error(error);
-                    // });
-                })*/
-            })
-        }
-    })
-}
-
-/***
- * @description - Sends captcha image to user to complete appointment booking
- * @param chatId - Identifier for current chat
- * @param userToken - Authentication token for current user
- * @param bot - Instance of Telegram bot
- */
-
-function sendCaptcha(chatId, userToken) {
-    utilMethods.getCaptcha(userToken, function(response) {
-        var captcha = response.captcha;
-        svgToPng.convert(captcha).then(function(responseCaptcha) {
-            bot.sendPhoto(chatId, responseCaptcha, {
-                caption: messages.commandMessages.captchaMessage,
-                reply_markup: {
-                    force_reply: true
-                }
-            })
-            .then(function(response) {
-                console.log(response);
-            }).catch(function(error) {
-                console.error(error);
-            })
-        })
     })
 } 
 
@@ -508,7 +438,5 @@ module.exports = {
     sendBookingOTPMessage,
     sendBeneficiariesMessage,
     searchSlots,
-    initiateBookingSlot,
-    sendCaptcha,
     sendSetupCompleteMessage
 }

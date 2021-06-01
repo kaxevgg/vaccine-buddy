@@ -1,5 +1,10 @@
 var request = require('request');
 var crypto = require('crypto');
+var bot = require("../config").bot;
+var users = require("../config").users;
+var svgToPng = require('convert-svg-to-png');
+var messages = require("./messages");
+var moment = require("moment");
 
 // Util functions
 
@@ -30,7 +35,7 @@ function generateOTP(mobile, callback) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            "secret": "U2FsdGVkX1+VTlP0So1QxL6tbZmIty6lx41dE0iN09YJTzJwqYwC06FCG90Sw8h7qgJhN+jW+TGYvKPDXOEv0Q==",
+            "secret": "U2FsdGVkX19dS0NTa5FVqCDeEBGQq9PY+Ximiwih6A07Cit81yEl+gfjm5Chv7BJqIk0ehM3B07f64UEnIQGsQ==",
             "mobile": mobile
         })
     };
@@ -54,7 +59,8 @@ function validateOTP(otp, txnId, callback) {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/auth/validateMobileOtp',
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
         body: JSON.stringify({
             "otp": hashedOtp,
@@ -80,7 +86,8 @@ function getBeneficiaries(userToken, callback) {
         'url': 'https://cdn-api.co-vin.in/api/v2/appointment/beneficiaries',
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -99,7 +106,8 @@ function getStates(callback) {
         'method': 'GET',
         'url': 'https://cdn-api.co-vin.in/api/v2/admin/location/states',
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -119,7 +127,8 @@ function getDistricts(stateId, callback) {
         'method': 'GET',
         'url': `https://cdn-api.co-vin.in/api/v2/admin/location/districts/${stateId}`,
         'headers': {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
@@ -135,78 +144,202 @@ function getDistricts(stateId, callback) {
  * @function callback - Callback function for storing response
  */
 
-function searchSlots(user, callback) {
+function searchSlots(chatId, user, trialNumber, messageId) {
+    var existingDate = moment(user.vaccinationDate, "DD-MM-YYYY");
+    var newDate = moment();
+
+    var vaccinationDate;
+
+    if (newDate > existingDate) {
+        vaccinationDate = (newDate.date() < 10 ? "0" + newDate.date() : newDate.date()) + "-" + ((newDate.month() + 1) < 10 ? "0" + (newDate.month() + 1) : (newDate.month() + 1)) + "-" + newDate.year()
+    } else {
+        vaccinationDate = user.vaccinationDate;
+    }
+
     var options = {
         'method': 'GET',
-        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/calendarByDistrict?district_id=${user.districtId}&date=${user.vaccinationDate}`,
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/calendarByDistrict?district_id=${user.districtId}&date=${vaccinationDate}`,
         'headers': {
-            'Content-Type': 'application/json'
+            'Accept-Language': 'en_IN',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${user.token}`,
+            'Origin': 'https://selfregistration.cowin.gov.in',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
         },
     };
     request(options, function (error, response) {
-        if (error) throw new Error(error);
-        var centers = JSON.parse(response.body).centers;
+        if (error || response.body == 'Unauthenticated access!') {
+            console.error(error);
 
-        var slotFound = false;
+            bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+            .then(function(response) {
+                // console.log(response);
+            }).catch (function (error) {
+                console.error(error);
+            });
+        } else {
+            var centers = JSON.parse(response.body).centers;
+            console.log("Number of centers: ", centers.length);
 
-        for (i in centers) {
-            center = centers[i];
-            for (j in center.sessions) {
-                session = center.sessions[j];
+            var trials = trialNumber;
+            var slotFound = false;
+            var slotData;
+            var sessionDetails;
+            var centerDetails;
 
-                if (user.dose == 1) {
-                    if (!slotFound && session.available_capacity_dose1 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
-                        console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
+            for (i in centers) {
+                var center = centers[i];
 
-                        slotFound = true;
+                for (j in center.sessions) {
+                    var session = center.sessions[j];
+
+                    // console.log("------SESSION START--------")
+                    // console.log(!slotFound);
+                    // console.log(session.available_capacity_dose1 >= user.beneficiaryIds.length);
+                    // console.log(session.min_age_limit == parseInt(user.minAge));
+                    // console.log(user.preferredVaccines.includes(session.vaccine))
+                    // console.log(!slotFound && session.available_capacity_dose1 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine))
+                    // console.log("------SESSION END--------")
+
+                    
+                    if (parseInt(user.dose) == 1) {
+                        if (!slotFound && (session.available_capacity_dose1 >= user.beneficiaryIds.length) && (session.min_age_limit == parseInt(user.minAge)) && (user.preferredVaccines.includes(session.vaccine))) {
+                            console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
     
-                        data = {
-                            center_id: center.center_id,
-                            session_id: session.session_id,
-                            dose: user.dose,
-                            slot: session.slots[0],
-                            beneficiaries: user.beneficiaryIds
+                            slotFound = true;
+        
+                            slotData = {
+                                center_id: center.center_id,
+                                session_id: session.session_id,
+                                dose: parseInt(user.dose),
+                                slot: session.slots[0],
+                                beneficiaries: user.beneficiaryIds,
+                                captcha: user.captcha
+                            }
+        
+                            sessionDetails = session;
+                            centerDetails = center;
                         }
+                    } else if (parseInt(user.dose) == 2) {
+                        if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
+                            console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
     
-                        callback({
-                            success: true,
-                            message: "Slot Found!",
-                            data: data,
-                            session: session
-                        });
-                    }
-                } else if (user.dose == 2) {
-                    if (!slotFound && session.available_capacity_dose2 > 0 && session.min_age_limit == user.minAge && user.preferredVaccines.includes(session.vaccine)) {
-                        console.log("Vaccines available at : ", center.pincode, center.name, center.center_id, session.available_capacity);
-
-                        slotFound = true;
-    
-                        data = {
-                            center_id: center.center_id,
-                            session_id: session.session_id,
-                            dose: user.dose,
-                            slot: session.slots[0],
-                            beneficiaries: user.beneficiaryIds
+                            slotFound = true;
+        
+                            slotData = {
+                                center_id: center.center_id,
+                                session_id: session.session_id,
+                                dose: parseInt(user.dose),
+                                slot: session.slots[0],
+                                beneficiaries: user.beneficiaryIds,
+                                captcha: user.captcha
+                            }
+        
+                            sessionDetails = session;
+                            centerDetails = center;
                         }
-    
-                        callback({
-                            success: true,
-                            message: "Slot Found!",
-                            data: data,
-                            session: session
-                        });
                     }
                 }
             }
-        }
 
-        if (!slotFound) {
-            callback({
-                success: false,
-                message: "No Slots Found!"
-            })
+            if (!slotFound) {
+                console.log(`Check No: ${trials}`)
+                trials += 1;
+
+                if (trials <= 400) {
+                    if (messageId == null) {
+                        bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
+                        .then(function(response) {
+                            // console.log(response);
+                            console.log("No slots found. Searching again . . .");
+    
+                            setTimeout(function() {
+                                searchSlots(chatId, user, trials, response.message_id);
+                            }, 3000);
+                        }).catch (function (error) {
+                            console.error(error);
+                        });
+                    } else {
+                        bot.editMessageText(`No slots found! Searching again . . . (Attempt ${trials - 1})`, {
+                            message_id: messageId,
+                            chat_id: chatId 
+                        }).then(function(response) {
+
+                            console.log("No slots found. Searching again . . .");
+
+                            setTimeout(function() {
+                                searchSlots(chatId, user, trials, response.message_id);
+                            }, 3000);
+                        }).catch(function(error) {
+                            console.error(error);
+                        })
+                    }
+                } else {
+                    bot.sendMessage(chatId, "No slots found. Try again later. Press /book to search again.")
+                    
+                    console.log("No slots found. Try again later.");
+                }
+            } else {
+                users.doc(chatId.toString()).update({
+                    availableSlot: slotData,
+                    availableSessionDetails: sessionDetails,
+                    availableCenterDetails: centerDetails
+                }).then(function(response) {
+                    console.log(response);
+
+                    initiateBookingSlot(chatId);
+                });
+            }
         }
     });
+}
+
+function initiateBookingSlot(chatId) {
+    users.doc(chatId.toString()).get().then(function(response) {
+        if (!response.exists) {
+            console.error("No user found")
+        } else {
+            var slotData = response.data().availableSlot;
+
+            bookSlot(slotData, response.data().token, function(bookingResponse) {
+                if ('appointment_confirmation_no' in JSON.parse(bookingResponse.body)) {
+                    var bookingConfirmationMessage = `Hooray! Your appointment has been scheduled at ${response.data().availableCenterDetails.name} in ${response.data().availableCenterDetails.district_name} on ${response.data().availableSessionDetails.date} at ${response.data().availableSlot.slot}. Please check the Cowin Website for further details.`
+
+                    bot.sendMessage(chatId, bookingConfirmationMessage)
+                    .then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+
+                    users.doc(chatId.toString()).update({
+                        appointmentId: JSON.parse(bookingResponse.body).appointment_confirmation_no
+                    }).then(function(response) {
+                        console.log(response);
+                    });
+                } else if (bookingResponse == 'Unauthenticated access!') {
+                    console.log("Unauthenticated access");
+
+                    bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+                    .then(function(response) {
+                        // console.log(response);
+                    }).catch (function (error) {
+                        console.error(error);
+                    });
+                } else {
+                    bot.sendMessage(chatId, messages.commandMessages.bookingErrorMessage)
+                    .then(function(response) {
+                        console.log(response);
+                    }).catch(function(error) {
+                        console.error(error);
+                    });
+
+                    searchSlots(chatId, response.data(), 1, null)
+                }
+            })
+        }
+    })
 }
 
 function bookSlot(slotData, userToken, callback) {
@@ -214,14 +347,19 @@ function bookSlot(slotData, userToken, callback) {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/appointment/schedule',
         'headers': {
+            'Accept-Language': 'en_IN',
+            'Accept': 'application/json',
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.93 Safari/537.36'
         },
         'body': JSON.stringify(slotData)
     };
     request(options, function (error, response) {
         if (error) throw new Error(error);
-        callback(JSON.parse(response.body));
+        console.log(response);
+        callback(response);
     });
 }
 
@@ -233,7 +371,8 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
         'url': `https://cdn-api.co-vin.in/api/v2/appointment/appointmentslip/download?appointment_id=${appointmentId}`,
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         }
     };
     request(options, function (error, response) {
@@ -243,25 +382,186 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
 }
 
 /***
+ * @description - Sends captcha image to user to complete appointment booking
+ * @param chatId - Identifier for current chat
+ * @param userToken - Authentication token for current user
+ * @param bot - Instance of Telegram bot
+ */
+
+ function sendCaptcha(chatId, userToken) {
+    getCaptcha(chatId, userToken, function(response) {
+        if (!response.error) {
+            var captcha = response.captchaData.captcha;
+            svgToPng.convert(captcha).then(function(responseCaptcha) {
+                bot.sendPhoto(chatId, responseCaptcha, {
+                    caption: messages.commandMessages.captchaMessage,
+                    reply_markup: {
+                        force_reply: true
+                    }
+                })
+                .then(function(response) {
+                    console.log(response);
+                }).catch(function(error) {
+                    console.error(error);
+                })
+            })
+        }
+    })
+} 
+
+/***
  * @description - Generates CAPTCHA Code for authentication
  * @param userToken - Authentication token for current user 
  * @function callback - Callback function for storing response
  */
 
-function getCaptcha(userToken, callback) {
+function getCaptcha(chatId, userToken, callback) {
     var options = {
         'method': 'POST',
         'url': 'https://cdn-api.co-vin.in/api/v2/auth/getRecaptcha',
         'headers': {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`
+            'Authorization': `Bearer ${userToken}`,
+            'Origin': 'https://selfregistration.cowin.gov.in'
         },
     };
     request(options, function (error, response) {
         if (error) throw new Error(error);
-        callback(JSON.parse(response.body))
+        if (response.body == 'Unauthenticated access!') {
+            bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+            .then(function(response) {
+                console.log(response);
+            }).catch (function (error) {
+                console.error(error);
+            });
+            callback({error: true})
+        } else {
+            console.log(response);
+            callback({error: false, captchaData: JSON.parse(response.body)})
+        }
     });
 }
+
+/*
+function backgroundSearchSlots() {
+    var newDate = moment().add(1, 'days')
+
+    var vaccinationDate = (newDate.date() < 10 ? "0" + newDate.date() : newDate.date()) + "-" + (newDate.month() < 10 ? "0" + newDate.month() : newDate.month()) + "-" + newDate.year();
+
+    var options = {
+        'method': 'GET',
+        'url': `https://cdn-api.co-vin.in/api/v2/appointment/sessions/public/findByDistrict?district_id=395&date=${vaccinationDate}`,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Origin': 'https://selfregistration.cowin.gov.in'
+        },
+    };
+    request(options, function (error, response) {
+        if (error || response.body == 'Unauthenticated access!') {
+            console.error(error);
+
+            bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
+            .then(function(response) {
+                // console.log(response);
+            }).catch (function (error) {
+                console.error(error);
+            });
+        } else {
+            var sessions = JSON.parse(response.body).sessions;
+            var trials = trialNumber;
+            var slotFound = false;
+            var slotData;
+            var sessionDetails;
+
+            for (i in sessions) {
+                session = sessions[i];
+
+                if (parseInt(user.dose) == 1) {
+                    if (!slotFound && session.available_capacity_dose1 >= 4 && session.min_age_limit == 18) {
+                        console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
+
+                        slotFound = true;
+    
+                        slotData = {
+                            session_id: session.session_id,
+                            dose: parseInt(user.dose),
+                            slot: session.slots[0],
+                            beneficiaries: user.beneficiaryIds,
+                            captcha: user.captcha
+                        }
+    
+                        sessionDetails = session;
+                    }
+                } else if (parseInt(user.dose) == 2) {
+                    if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
+                        console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
+
+                        slotFound = true;
+    
+                        slotData = {
+                            session_id: session.session_id,
+                            dose: parseInt(user.dose),
+                            slot: session.slots[0],
+                            beneficiaries: user.beneficiaryIds,
+                            captcha: user.captcha
+                        }
+    
+                        sessionDetails = session;
+                    }
+                }
+            }
+
+            if (!slotFound) {
+                console.log(`Check No: ${trials}`)
+                trials += 1;
+
+                if (trials <= 200) {
+                    if (messageId == null) {
+                        bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
+                        .then(function(response) {
+                            // console.log(response);
+                            console.log("No slots found. Searching again . . .");
+    
+                            setTimeout(function() {
+                                searchSlots(chatId, user, trials, response.message_id);
+                            }, 5000);
+                        }).catch (function (error) {
+                            console.error(error);
+                        });
+                    } else {
+                        bot.editMessageText(`No slots found! Searching again . . . (Attempt ${trials - 1})`, {
+                            message_id: messageId,
+                            chat_id: chatId 
+                        }).then(function(response) {
+
+                            console.log("No slots found. Searching again . . .");
+
+                            setTimeout(function() {
+                                searchSlots(chatId, user, trials, response.message_id);
+                            }, 5000);
+                        }).catch(function(error) {
+                            console.error(error);
+                        })
+                    }
+                } else {
+                    bot.sendMessage(chatId, "No slots found. Try again later.")
+                    
+                    console.log("No slots found. Try again later.");
+                }
+            } else {
+                users.doc(chatId.toString()).update({
+                    availableSlot: slotData,
+                    availableSessionDetails: sessionDetails,
+                }).then(function(response) {
+                    console.log(response);
+
+                    initiateBookingSlot(chatId);
+                });
+            }
+        }
+    });
+}
+*/
 
 module.exports = {
     createGroups,
@@ -273,5 +573,6 @@ module.exports = {
     searchSlots,
     bookSlot,
     downloadAppointmentPDF,
+    sendCaptcha,
     getCaptcha
 }
