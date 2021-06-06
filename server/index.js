@@ -28,8 +28,8 @@ bot.setMyCommands([
 ]);
 
 const observer = allowedUsers.where('approved', '==', false)
-  .onSnapshot(querySnapshot => {
-    querySnapshot.docChanges().forEach(change => {
+  .onSnapshot(function(querySnapshot) {
+    querySnapshot.docChanges().forEach(function(change) {
       if (change.type === 'modified') {
         bot.sendMessage(change.doc.data().chatId, "You have been approved to use the bot. Kindly press /start to begin.")
       }
