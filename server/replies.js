@@ -44,7 +44,7 @@ module.exports.handleReply = function (chatId, user, originalMessageText, curren
             botMethods.sendBeneficiariesMessage(chatId, otp, true);
         } else {
             botMethods.sendErrorMessage(chatId, "OTP format is wrong.", function(response) {
-                botMethods.sendBeneficiaryOTPMessage(chatId, user.phoneNumber, true)
+                botMethods.sendBeneficiaryOTPMessage(chatId, user.data.phoneNumber, true)
             });
         }
     }
@@ -73,7 +73,7 @@ module.exports.handleReply = function (chatId, user, originalMessageText, curren
             botMethods.sendBeneficiariesMessage(chatId, otp, false);
         } else {
             botMethods.sendErrorMessage(chatId, "OTP format is wrong.", function(response) {
-                botMethods.sendBeneficiaryOTPMessage(chatId, user.phoneNumber, false)
+                botMethods.sendBeneficiaryOTPMessage(chatId, user.data.phoneNumber, false)
             });
         }
     } else if (originalMessageText == messages.commandMessages.bookingOtpMessage) {
@@ -83,7 +83,7 @@ module.exports.handleReply = function (chatId, user, originalMessageText, curren
             botMethods.searchSlots(chatId, otp);
         } else {
             botMethods.sendErrorMessage(chatId, "OTP format is wrong.", function(response) {
-                botMethods.sendBookingOTPMessage(chatId, user.phoneNumber)
+                botMethods.sendBookingOTPMessage(chatId, user.data.phoneNumber)
             });
         }
     }

@@ -179,54 +179,57 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                 console.error(error);
             });
         } else {
-            var centers = JSON.parse(response.body).centers;
-            console.log("Number of centers: ", centers.length);
-
             var trials = trialNumber;
             var slotFound = false;
-            var slotData;
-            var sessionDetails;
-            var centerDetails;
 
-            for (i in centers) {
-                var center = centers[i];
+            if ('centers' in JSON.parse(response.body)) {
+                var centers = JSON.parse(response.body).centers;
+                console.log("Number of centers: ", centers.length);
 
-                for (j in center.sessions) {
-                    var session = center.sessions[j];
-                    
-                    if (parseInt(user.dose) == 1) {
-                        if (!slotFound && (session.available_capacity_dose1 >= user.beneficiaryIds.length) && (session.min_age_limit == parseInt(user.minAge)) && (user.preferredVaccines.includes(session.vaccine))) {
-                            console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
-    
-                            slotFound = true;
+                var slotData;
+                var sessionDetails;
+                var centerDetails;
+
+                for (i in centers) {
+                    var center = centers[i];
+
+                    for (j in center.sessions) {
+                        var session = center.sessions[j];
+                        
+                        if (parseInt(user.dose) == 1) {
+                            if (!slotFound && (session.available_capacity_dose1 >= user.beneficiaryIds.length) && (session.min_age_limit == parseInt(user.minAge)) && (user.preferredVaccines.includes(session.vaccine))) {
+                                console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
         
-                            slotData = {
-                                center_id: center.center_id,
-                                session_id: session.session_id,
-                                dose: parseInt(user.dose),
-                                slot: session.slots[0],
-                                beneficiaries: user.beneficiaryIds
+                                slotFound = true;
+            
+                                slotData = {
+                                    center_id: center.center_id,
+                                    session_id: session.session_id,
+                                    dose: parseInt(user.dose),
+                                    slot: session.slots[0],
+                                    beneficiaries: user.beneficiaryIds
+                                }
+            
+                                sessionDetails = session;
+                                centerDetails = center;
                             }
+                        } else if (parseInt(user.dose) == 2) {
+                            if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
+                                console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
         
-                            sessionDetails = session;
-                            centerDetails = center;
-                        }
-                    } else if (parseInt(user.dose) == 2) {
-                        if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine)) {
-                            console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
-    
-                            slotFound = true;
-        
-                            slotData = {
-                                center_id: center.center_id,
-                                session_id: session.session_id,
-                                dose: parseInt(user.dose),
-                                slot: session.slots[0],
-                                beneficiaries: user.beneficiaryIds
+                                slotFound = true;
+            
+                                slotData = {
+                                    center_id: center.center_id,
+                                    session_id: session.session_id,
+                                    dose: parseInt(user.dose),
+                                    slot: session.slots[0],
+                                    beneficiaries: user.beneficiaryIds
+                                }
+            
+                                sessionDetails = session;
+                                centerDetails = center;
                             }
-        
-                            sessionDetails = session;
-                            centerDetails = center;
                         }
                     }
                 }

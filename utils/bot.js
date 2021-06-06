@@ -413,6 +413,14 @@ function searchSlots(chatId, otp) {
                     token: token
                 }).then(function(response) {
                     console.log(response);
+                    
+                    users.doc(chatId.toString()).get().then(function (updatedResponse) {
+                        if (!updatedResponse.exists) {
+                            console.error("No user found")
+                        } else {
+                            utilMethods.searchSlots(chatId, updatedResponse.data(), 1, null)
+                        }
+                    });
                 });
             })
         }
