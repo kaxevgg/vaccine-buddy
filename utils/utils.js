@@ -2,7 +2,6 @@ var request = require('request');
 var crypto = require('crypto');
 var bot = require("../config").bot;
 var users = require("../config").users;
-var svgToPng = require('convert-svg-to-png');
 var messages = require("./messages");
 var moment = require("moment");
 
