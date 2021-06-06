@@ -506,7 +506,6 @@ function sendUnauthorizedMessage(chatId) {
     bot.sendMessage(chatId, "Kindly reach out to Arpit Bansal (@arpitbansal3) on telegram to get access to the bot")
     .then(function(response) {
         console.log(response);
-        callback(response);
     }).catch(function(error) {
         console.error(error);
     })
