@@ -27,8 +27,7 @@ bot.setMyCommands([
   {command: "book", description: "Initiate booking of vaccine"},
 ]);
 
-allowedUsers.where('approved', '==', false)
-  .onSnapshot(function(querySnapshot) {
+allowedUsers.onSnapshot(function(querySnapshot) {
     querySnapshot.docChanges().forEach(function(change) {
       console.log("Something changed")
       console.log(change.doc.data());
