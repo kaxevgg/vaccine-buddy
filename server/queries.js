@@ -46,11 +46,7 @@ module.exports.handleQueryResponse = function (query) {
         if (callbackQueryData.isInitialSetup) {
             botMethods.sendStateSelectionMessage(chatId, true)
         } else {
-            if (cost.length == 1) {
-                botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Cost', cost[0]);
-            } else {
-                botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Cost', 'Both');
-            }
+            botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Cost', cost);
         }
     } else if (callbackQueryData.bot_command == "/state") {
         var stateId = callbackQueryData.stateId;

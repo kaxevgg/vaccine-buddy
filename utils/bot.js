@@ -152,17 +152,17 @@ function sendAgeBracketMessage (chatId, isInitialSetup) {
             inline_keyboard: [
                 [
                     {text: "Free", callback_data: JSON.stringify({
-                        cost: ["Free"],
+                        cost: "Free",
                         bot_command: "/cost",
                         isInitialSetup: isInitialSetup
                     })}, 
                     {text: "Paid", callback_data: JSON.stringify({
-                        cost: ["Paid"],
+                        cost: "Paid",
                         bot_command: "/cost",
                         isInitialSetup: isInitialSetup
                     })},
                     {text: "Both", callback_data: JSON.stringify({
-                        cost: ["Free", "Paid"],
+                        cost: "Both",
                         bot_command: "/cost",
                         isInitialSetup: isInitialSetup
                     })}

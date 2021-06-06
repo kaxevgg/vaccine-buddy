@@ -196,7 +196,12 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                         var session = center.sessions[j];
                         
                         if (parseInt(user.dose) == 1) {
-                            if (!slotFound && (session.available_capacity_dose1 >= user.beneficiaryIds.length) && (session.min_age_limit == parseInt(user.minAge)) && (user.preferredVaccines.includes(session.vaccine)) && (user.preferredCost.includes(center.fee_type))) {
+                            if (!slotFound && 
+                                (session.available_capacity_dose1 >= user.beneficiaryIds.length) && 
+                                (session.min_age_limit == parseInt(user.minAge)) && 
+                                (user.preferredVaccines.includes(session.vaccine)) && 
+                                (user.preferredCost == center.fee_type || user.preferredCost == "Both")
+                            ) {
                                 console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
         
                                 slotFound = true;
@@ -213,7 +218,12 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                                 centerDetails = center;
                             }
                         } else if (parseInt(user.dose) == 2) {
-                            if (!slotFound && session.available_capacity_dose2 >= user.beneficiaryIds.length && session.min_age_limit == parseInt(user.minAge) && user.preferredVaccines.includes(session.vaccine) && (user.preferredCost.includes(center.fee_type))) {
+                            if (!slotFound && 
+                                session.available_capacity_dose2 >= user.beneficiaryIds.length && 
+                                session.min_age_limit == parseInt(user.minAge) && 
+                                user.preferredVaccines.includes(session.vaccine) && 
+                                (user.preferredCost == center.fee_type || user.preferredCost == "Both")
+                            ) {
                                 console.log("Vaccines available at : ", session.pincode, session.name, session.center_id, session.available_capacity_dose1);
         
                                 slotFound = true;
