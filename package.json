@@ -2,7 +2,7 @@
   "name": "vaccine-backend",
   "version": "0.0.0",
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "NODE_ENV=production node ./bin/www"
   },
   "dependencies": {
     "axios": "^0.21.1",
