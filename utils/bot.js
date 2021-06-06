@@ -25,18 +25,20 @@ function sendInitialMessage (chatId) {
         console.log(response);
 
         // Send phone number message
+        sendPhoneNumberMessage(chatId);
 
-        bot.sendMessage(chatId, messages.setupMessages.phoneNumberMessage, 
-        {
-            reply_markup: {
-                force_reply: true
-            }
-        }).then(function (response) {
-            console.log(response);
-        }).catch(function (error) {
-            console.error(error);
-        })
+    }).catch(function (error) {
+        console.error(error);
+    })
+}
 
+function sendPhoneNumberMessage (chatId) {
+    bot.sendMessage(chatId, messages.setupMessages.phoneNumberMessage, {
+        reply_markup: {
+            force_reply: true
+        }
+    }).then(function (response) {
+        console.log(response);
     }).catch(function (error) {
         console.error(error);
     })
@@ -442,8 +444,19 @@ function sendPreferencesUpdatedConfirmationMessage (chatId, preferenceName, upda
     })
 }
 
+function sendErrorMessage (chatId, errorMessage, callback) {
+    bot.sendMessage(chatId, errorMessage)
+    .then(function(response) {
+        console.log(response);
+        callback(response);
+    }).catch(function(error) {
+        console.error(error);
+    })
+}
+
 module.exports = {
     sendInitialMessage,
+    sendPhoneNumberMessage,
     sendVaccinationDateMessage,
     sendVaccinationDoseMessage,
     sendAgeBracketMessage,
@@ -455,5 +468,6 @@ module.exports = {
     sendBeneficiariesMessage,
     searchSlots,
     sendSetupCompleteMessage,
-    sendPreferencesUpdatedConfirmationMessage
+    sendPreferencesUpdatedConfirmationMessage,
+    sendErrorMessage
 }
