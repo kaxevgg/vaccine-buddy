@@ -102,7 +102,7 @@ bot.on("message", function(message) {
         console.log("Error getting document:", error);
     });
   } else {
-    botMethods.sendUnauthorizedMessage(chatId);
+    bot.sendMessage(chatId, "You do not have a telegram username. Kindly set a username in Telegram and try again.")
   }
 })
 
