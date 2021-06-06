@@ -44,6 +44,8 @@ bot.on("message", function(message) {
         id: response.id,
         data: response.data()
       }
+      
+      console.log(message.from.username);
 
       allowedUsers.where('username', '==', message.from.username).get()
       .then(function (response) {
