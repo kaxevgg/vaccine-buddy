@@ -49,10 +49,7 @@ bot.on("message", function(message) {
 
       allowedUsers.where('username', '==', message.from.username).get()
       .then(function (response) {
-        response.forEach(function(doc) {
-          console.log(doc.id, '=>', doc.data());
-        });
-        if (response.exists) {
+        if (response.length > 0) {
           // Handling all bot commands
           handleBotCommands(chatId, user, message);
 
