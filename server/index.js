@@ -32,7 +32,9 @@ allowedUsers.onSnapshot(function(querySnapshot) {
       console.log("Something changed")
       console.log(change.doc.data());
       if (change.type === 'modified') {
-        bot.sendMessage(change.doc.data().chatId, "You have been approved to use the bot. Kindly press /start to begin.")
+        if (change.doc.data().approved) {
+          bot.sendMessage(change.doc.data().chatId, "You have been approved to use the bot. Kindly press /start to begin.")
+        }
       }
     });
 });
