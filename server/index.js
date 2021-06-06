@@ -27,9 +27,11 @@ bot.setMyCommands([
   {command: "book", description: "Initiate booking of vaccine"},
 ]);
 
-const observer = allowedUsers.where('approved', '==', false)
+allowedUsers.where('approved', '==', false)
   .onSnapshot(function(querySnapshot) {
     querySnapshot.docChanges().forEach(function(change) {
+      console.log("Something changed")
+      console.log(change.doc.data());
       if (change.type === 'modified') {
         bot.sendMessage(change.doc.data().chatId, "You have been approved to use the bot. Kindly press /start to begin.")
       }
