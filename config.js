@@ -16,8 +16,10 @@ firebase.initializeApp({
 // Get database
 var db = firebase.firestore();
 var users = db.collection('users');
+var allowedUsers = db.collection('allowedUsers');
 
 module.exports = {
     bot: bot,
-    users: users
+    users: users,
+    allowedUsers: allowedUsers
 }
