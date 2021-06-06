@@ -86,27 +86,5 @@ module.exports.handleReply = function (chatId, user, originalMessageText, curren
                 botMethods.sendBookingOTPMessage(chatId, user.phoneNumber)
             });
         }
-    } else if (originalMessageText == messages.commandMessages.captchaMessage) {
-        var captcha = currentMessageText;
-        
-        if (captcha.match(/[A-Za-z0-9]{5}/)) {
-            users.doc(user.id).update({
-                captcha: captcha
-            }).then(function (response) {
-                console.log(response);
-    
-                users.doc(user.id).get().then(function (updatedResponse) {
-                    if (!updatedResponse.exists) {
-                        console.error("No user found")
-                    } else {
-                        utilMethods.searchSlots(chatId, updatedResponse.data(), 1, null)
-                    }
-                });
-            });
-        } else {
-            botMethods.sendErrorMessage(chatId, "Captcha format is wrong.", function(response) {
-                utilMethods.sendCaptcha(chatId, user.token);
-            });
-        }
     }
 }
