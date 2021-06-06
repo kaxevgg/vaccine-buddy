@@ -16,7 +16,6 @@ bot.on('polling_error', (error) => {
 });
 
 bot.setMyCommands([
-  {command: "restart", description: "To start setup from the beginning"},
   {command: "date", description: "Set vaccination start date in DD-MM-YYYY"},
   {command: "dose", description: "Set vaccination dose number"},
   {command: "age", description: "Set minimum age for vaccinations"},

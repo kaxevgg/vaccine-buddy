@@ -1,7 +1,7 @@
 var botMethods = require("../utils/bot");
 
 module.exports.handleBotCommands = function (chatId, user, message) {
-    if (message.text == '/start' || message.text == '/restart') {
+    if (message.text == '/start') {
         botMethods.sendInitialMessage(chatId)
     } else if (message.text == '/date') {
         botMethods.sendVaccinationDateMessage(chatId, false)
