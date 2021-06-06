@@ -47,6 +47,7 @@ bot.on("message", function(message) {
 
       allowedUsers.where('username', '==', message.from.username).get()
       .then(function (response) {
+        console.log(response);
         if (response.exists) {
           // Handling all bot commands
           handleBotCommands(chatId, user, message);
