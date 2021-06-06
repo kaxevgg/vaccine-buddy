@@ -27,36 +27,45 @@ bot.setMyCommands([
   {command: "book", description: "Initiate booking of vaccine"},
 ]);
 
+const observer = allowedUsers.where('approved', '==', false)
+  .onSnapshot(querySnapshot => {
+    querySnapshot.docChanges().forEach(change => {
+      if (change.type === 'modified') {
+        bot.sendMessage(change.doc.data().chatId, "You have been approved to use the bot. Kindly press /start to begin.")
+      }
+    });
+});
+
 bot.on("message", function(message) {
   console.log("Message Received: ", message);
   var chatId = message.chat.id;
 
-  users.doc(chatId.toString()).get().then(function(response) {
-    if (!response.exists) {
-      users.doc(chatId.toString()).set({
-        first_name: message.from.first_name
-      }).then(function(response) {
-        console.log(response);
-      })
-    } else {
+  if ('username' in message.from) {
+    allowedUsers.where('username', '==', message.from.username).get()
+    .then(function (response) {
+      var userApproved = false;
 
-      var user = {
-        id: response.id,
-        data: response.data()
-      }
+      if (!response.empty) {
+        response.forEach(function(doc) {
+          userApproved = doc.data().approved;
+          console.log(doc.id, '=>', doc.data());
+        });
 
-      if ('username' in message.from) {
-        allowedUsers.where('username', '==', message.from.username).get()
-        .then(function (response) {
-          var userApproved = false;
+        if (userApproved) {
+          users.doc(chatId.toString()).get().then(function(response) {
+            if (!response.exists) {
+              users.doc(chatId.toString()).set({
+                first_name: message.from.first_name
+              }).then(function(response) {
+                console.log(response);
+              })
+            } else {
+        
+              var user = {
+                id: response.id,
+                data: response.data()
+              }
 
-          if (!response.empty) {
-            response.forEach(function(doc) {
-              userApproved = doc.data().approved;
-              console.log(doc.id, '=>', doc.data());
-            });
-            
-            if (userApproved) {
               // Handling all bot commands
               handleBotCommands(chatId, user, message);
 
@@ -71,26 +80,27 @@ bot.on("message", function(message) {
                   handleReply(chatId, user, originalMessage.caption, message.text)
                 }
               }
-            } else {
-              botMethods.sendUnauthorizedMessage(chatId);
             }
-          } else {
-              // doc.data() will be undefined in this case
-              console.log("No such document!");
-              allowedUsers.doc().add({
-                username: message.from.username,
-                approved: false
-              })
-              botMethods.sendUnauthorizedMessage(chatId);
-          }   
-        }).catch((error) => {
-            console.log("Error getting document:", error);
-        });
+          });
+        } else {
+          botMethods.sendUnauthorizedMessage(chatId);
+        }
       } else {
-        botMethods.sendUnauthorizedMessage(chatId);
-      }
-    }
-  });
+          // doc.data() will be undefined in this case
+          console.log("No such document!");
+          allowedUsers.doc().add({
+            chatId: chatId,
+            username: message.from.username,
+            approved: false
+          })
+          botMethods.sendUnauthorizedMessage(chatId);
+      }   
+    }).catch((error) => {
+        console.log("Error getting document:", error);
+    });
+  } else {
+    botMethods.sendUnauthorizedMessage(chatId);
+  }
 })
 
 // Poll Answer
