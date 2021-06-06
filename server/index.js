@@ -20,6 +20,7 @@ bot.setMyCommands([
   {command: "date", description: "Set vaccination start date in DD-MM-YYYY"},
   {command: "dose", description: "Set vaccination dose number"},
   {command: "age", description: "Set minimum age for vaccinations"},
+  {command: "cost", description: "Set cost preference for vaccinations (Free or Paid)"},
   {command: "state", description: "Set state of residence"},
   {command: "district", description: "Set district of residence"},
   {command: "vaccines", description: "Set preferred vaccines (Covaxin or Covishield)"},

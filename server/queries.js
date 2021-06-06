@@ -30,9 +30,27 @@ module.exports.handleQueryResponse = function (query) {
         });
 
         if (callbackQueryData.isInitialSetup) {
-            botMethods.sendStateSelectionMessage(chatId, true)
+            botMethods.sendCostSelectionMessage(chatId, true)
         } else {
             botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Minimum Age', minAge);
+        }
+    } else if (callbackQueryData.bot_command == "/cost") {
+        var cost = callbackQueryData.cost;
+
+        users.doc(chatId.toString()).update({
+            preferredCost: cost
+        }).then(function (response) {
+            console.log(response);
+        });
+
+        if (callbackQueryData.isInitialSetup) {
+            botMethods.sendStateSelectionMessage(chatId, true)
+        } else {
+            if (cost.length == 1) {
+                botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Cost', cost[0]);
+            } else {
+                botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Cost', 'Both');
+            }
         }
     } else if (callbackQueryData.bot_command == "/state") {
         var stateId = callbackQueryData.stateId;

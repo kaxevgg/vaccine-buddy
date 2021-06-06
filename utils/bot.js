@@ -137,6 +137,47 @@ function sendAgeBracketMessage (chatId, isInitialSetup) {
 }
 
 /***
+ * @description - Sends age bracket message to user
+ * @param chatId - Identifier for current chat
+ * @param bot - Instance of Telegram bot
+ * @param isInitialSetup - Boolean for whether initial setup flow
+ */
+
+ function sendCostSelectionMessage (chatId, isInitialSetup) {
+    var costMessage = isInitialSetup ? messages.setupMessages.costMessage : messages.commandMessages.costMessage;
+
+    bot.sendMessage(chatId, costMessage, 
+        {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    {text: "Free", callback_data: JSON.stringify({
+                        cost: ["Free"],
+                        bot_command: "/cost",
+                        isInitialSetup: isInitialSetup
+                    })}, 
+                    {text: "Paid", callback_data: JSON.stringify({
+                        cost: ["Paid"],
+                        bot_command: "/cost",
+                        isInitialSetup: isInitialSetup
+                    })},
+                    {text: "Both", callback_data: JSON.stringify({
+                        cost: ["Free", "Paid"],
+                        bot_command: "/cost",
+                        isInitialSetup: isInitialSetup
+                    })}
+                ]
+            ]
+        }
+    }).then(function (response) {
+        console.log(response);
+    }).catch(function (error) {
+        console.error(error);
+    })
+}
+
+
+/***
  * @description - Sends state message to user
  * @param chatId - Identifier for current chat
  * @param bot - Instance of Telegram bot
@@ -467,6 +508,7 @@ module.exports = {
     sendVaccinationDateMessage,
     sendVaccinationDoseMessage,
     sendAgeBracketMessage,
+    sendCostSelectionMessage,
     sendStateSelectionMessage,
     sendDistrictSelectionMessage,
     sendPreferredVaccineMessage,
