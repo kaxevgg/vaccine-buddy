@@ -48,27 +48,39 @@ bot.on("message", function(message) {
       if ('username' in message.from) {
         allowedUsers.where('username', '==', message.from.username).get()
         .then(function (response) {
-          response.forEach(function(doc) {
-            console.log(doc.id, '=>', doc.data());
-          });
+          var userApproved = false;
+
           if (!response.empty) {
-            // Handling all bot commands
-            handleBotCommands(chatId, user, message);
-
-            // Handling all message replies
+            response.forEach(function(doc) {
+              userApproved = doc.data().approved;
+              console.log(doc.id, '=>', doc.data());
+            });
             
-            if ('reply_to_message' in message) {
-              var originalMessage = message.reply_to_message;
+            if (userApproved) {
+              // Handling all bot commands
+              handleBotCommands(chatId, user, message);
 
-              if ('text' in originalMessage) {
-                handleReply(chatId, user, originalMessage.text, message.text)
-              } else if ('caption' in originalMessage) {
-                handleReply(chatId, user, originalMessage.caption, message.text)
+              // Handling all message replies
+              
+              if ('reply_to_message' in message) {
+                var originalMessage = message.reply_to_message;
+
+                if ('text' in originalMessage) {
+                  handleReply(chatId, user, originalMessage.text, message.text)
+                } else if ('caption' in originalMessage) {
+                  handleReply(chatId, user, originalMessage.caption, message.text)
+                }
               }
+            } else {
+              botMethods.sendUnauthorizedMessage(chatId);
             }
           } else {
               // doc.data() will be undefined in this case
               console.log("No such document!");
+              allowedUsers.doc().add({
+                username: message.from.username,
+                approved: false
+              })
               botMethods.sendUnauthorizedMessage(chatId);
           }   
         }).catch((error) => {
