@@ -7,54 +7,60 @@ module.exports.handleQueryResponse = function (query) {
     var chatId = query.message.chat.id;
 
     if (callbackQueryData.bot_command == "/dose") {
-    var doseId = callbackQueryData.doseId;
+        var doseId = callbackQueryData.doseId;
 
-    users.doc(chatId.toString()).update({
-        dose: doseId
-    }).then(function(response) {
-        console.log(response);
-    });
+        users.doc(chatId.toString()).update({
+            dose: doseId
+        }).then(function (response) {
+            console.log(response);
+        });
 
-    if (callbackQueryData.isInitialSetup) {
-        botMethods.sendAgeBracketMessage(query.message.chat.id, true)
-    }
+        if (callbackQueryData.isInitialSetup) {
+            botMethods.sendAgeBracketMessage(chatId, true)
+        } else {
+            botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Dose No.', doseId);
+        }
     } else if (callbackQueryData.bot_command == "/age") {
-    var minAge = callbackQueryData.minAge;
-    
-    users.doc(chatId.toString()).update({
-        minAge: minAge
-    }).then(function(response) {
-        console.log(response);
-    });
+        var minAge = callbackQueryData.minAge;
 
-    if (callbackQueryData.isInitialSetup) {
-        botMethods.sendStateSelectionMessage(query.message.chat.id, true)
-    }
+        users.doc(chatId.toString()).update({
+            minAge: minAge
+        }).then(function (response) {
+            console.log(response);
+        });
+
+        if (callbackQueryData.isInitialSetup) {
+            botMethods.sendStateSelectionMessage(chatId, true)
+        } else {
+            botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Minimum Age', minAge);
+        }
     } else if (callbackQueryData.bot_command == "/state") {
-    var stateId = callbackQueryData.stateId;
-    
-    users.doc(chatId.toString()).update({
-        stateId: stateId
-    }).then(function(response) {
-        console.log(response);
-    });
+        var stateId = callbackQueryData.stateId;
 
-    if (callbackQueryData.isInitialSetup) {
-        botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, true)
-    } else {
-        botMethods.sendDistrictSelectionMessage(query.message.chat.id, stateId, false)
-    }
+        users.doc(chatId.toString()).update({
+            stateId: stateId
+        }).then(function (response) {
+            console.log(response);
+        });
+
+        if (callbackQueryData.isInitialSetup) {
+            botMethods.sendDistrictSelectionMessage(chatId, stateId, true)
+        } else {
+            botMethods.sendDistrictSelectionMessage(chatId, stateId, false)
+        }
     } else if (callbackQueryData.bot_command == "/district") {
-    var districtId = callbackQueryData.districtId;
-    
-    users.doc(chatId.toString()).update({
-        districtId: districtId
-    }).then(function(response) {
-        console.log(response);
-    });
+        var districtId = callbackQueryData.districtId;
 
-    if (callbackQueryData.isInitial) {
-        botMethods.sendPreferredVaccineMessage(query.message.chat.id, true)
-    }
+        users.doc(chatId.toString()).update({
+            districtId: districtId
+        }).then(function (response) {
+            console.log(response);
+        });
+
+        if (callbackQueryData.isInitial) {
+            botMethods.sendPreferredVaccineMessage(chatId, true)
+        } else {
+            botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'District', 'reflect your choice above.');
+        }
     }
 }

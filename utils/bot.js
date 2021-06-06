@@ -149,7 +149,14 @@ function sendStateSelectionMessage (chatId, isInitialSetup) {
         var stateButtonOptions = [];
 
         states.map(function(state, index) {
-            stateButtonOptions.push({ text: state.state_name, callback_data: JSON.stringify({stateId: state.state_id, bot_command: "/state", isInitialSetup: isInitialSetup})})
+            stateButtonOptions.push({ 
+                text: state.state_name, 
+                callback_data: JSON.stringify({
+                    stateId: state.state_id, 
+                    bot_command: "/state", 
+                    isInitialSetup: isInitialSetup
+                })
+            })
         });
 
         stateButtonOptions = utilMethods.createGroups(stateButtonOptions, Math.ceil(stateButtonOptions.length/2))
@@ -426,6 +433,15 @@ function sendSetupCompleteMessage(chatId) {
     })
 } 
 
+function sendPreferencesUpdatedConfirmationMessage (chatId, preferenceName, updatedPreferenceValue) {
+    bot.sendMessage(chatId, `${preferenceName} has been successfully updated to ${updatedPreferenceValue}`)
+    .then(function(response) {
+        console.log(response);
+    }).catch(function(error) {
+        console.error(error);
+    })
+}
+
 module.exports = {
     sendInitialMessage,
     sendVaccinationDateMessage,
@@ -438,5 +454,6 @@ module.exports = {
     sendBookingOTPMessage,
     sendBeneficiariesMessage,
     searchSlots,
-    sendSetupCompleteMessage
+    sendSetupCompleteMessage,
+    sendPreferencesUpdatedConfirmationMessage
 }

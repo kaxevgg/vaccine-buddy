@@ -39,9 +39,11 @@ module.exports.handleReply = function (chatId, user, originalMessageText, curren
         }).then(function (response) {
             console.log(response);
         });
+
+        botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Vaccination Date', vaccinationDate);
     } else if (originalMessageText == messages.commandMessages.beneficiariesOtpMessage) {
         var otp = currentMessageText;
-        botMethods.sendBeneficiariesMessage(chatId, otp, user.data.txnId, false);
+        botMethods.sendBeneficiariesMessage(chatId, otp, false);
     } else if (originalMessageText == messages.commandMessages.bookingOtpMessage) {
         var otp = currentMessageText;
         botMethods.searchSlots(chatId, otp);

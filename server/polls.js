@@ -50,6 +50,8 @@ module.exports.handlePoll = function (chatId, poll, user) {
         }).then(function (response) {
             console.log(response);
         });
+
+        botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Vaccines', 'reflect your poll choices above.');
     } else if (pollId == user.data.updatedBeneficiariesPollId) {
         var beneficiaryIds = []
 
@@ -64,5 +66,7 @@ module.exports.handlePoll = function (chatId, poll, user) {
         }).then(function (response) {
             console.log(response);
         });
+
+        botMethods.sendPreferencesUpdatedConfirmationMessage(chatId, 'Beneficiaries', 'reflect your poll choices above.');
     }
 }
