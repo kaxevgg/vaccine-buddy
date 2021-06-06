@@ -205,8 +205,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                                 session_id: session.session_id,
                                 dose: parseInt(user.dose),
                                 slot: session.slots[0],
-                                beneficiaries: user.beneficiaryIds,
-                                captcha: user.captcha
+                                beneficiaries: user.beneficiaryIds
                             }
         
                             sessionDetails = session;
@@ -223,8 +222,7 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                                 session_id: session.session_id,
                                 dose: parseInt(user.dose),
                                 slot: session.slots[0],
-                                beneficiaries: user.beneficiaryIds,
-                                captcha: user.captcha
+                                beneficiaries: user.beneficiaryIds
                             }
         
                             sessionDetails = session;
@@ -372,67 +370,6 @@ function downloadAppointmentPDF (appointmentId, userToken, callback) {
     });
 }
 
-/***
- * @description - Sends captcha image to user to complete appointment booking
- * @param chatId - Identifier for current chat
- * @param userToken - Authentication token for current user
- * @param bot - Instance of Telegram bot
- */
-
- function sendCaptcha(chatId, userToken) {
-    getCaptcha(chatId, userToken, function(response) {
-        if (!response.error) {
-            var captcha = response.captchaData.captcha;
-            svgToPng.convert(captcha).then(function(responseCaptcha) {
-                bot.sendPhoto(chatId, responseCaptcha, {
-                    caption: messages.commandMessages.captchaMessage,
-                    reply_markup: {
-                        force_reply: true
-                    }
-                })
-                .then(function(response) {
-                    console.log(response);
-                }).catch(function(error) {
-                    console.error(error);
-                })
-            })
-        }
-    })
-} 
-
-/***
- * @description - Generates CAPTCHA Code for authentication
- * @param userToken - Authentication token for current user 
- * @function callback - Callback function for storing response
- */
-
-function getCaptcha(chatId, userToken, callback) {
-    var options = {
-        'method': 'POST',
-        'url': 'https://cdn-api.co-vin.in/api/v2/auth/getRecaptcha',
-        'headers': {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${userToken}`,
-            'Origin': 'https://selfregistration.cowin.gov.in'
-        },
-    };
-    request(options, function (error, response) {
-        if (error) throw new Error(error);
-        if (response.body == 'Unauthenticated access!') {
-            bot.sendMessage(chatId, "Your authentication has expired. Kindly press /book to regenerate OTP")
-            .then(function(response) {
-                console.log(response);
-            }).catch (function (error) {
-                console.error(error);
-            });
-            callback({error: true})
-        } else {
-            console.log(response);
-            callback({error: false, captchaData: JSON.parse(response.body)})
-        }
-    });
-}
-
 module.exports = {
     createGroups,
     generateOTP,
@@ -442,7 +379,5 @@ module.exports = {
     getDistricts,
     searchSlots,
     bookSlot,
-    downloadAppointmentPDF,
-    sendCaptcha,
-    getCaptcha
+    downloadAppointmentPDF
 }

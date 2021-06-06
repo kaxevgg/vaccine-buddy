@@ -413,7 +413,6 @@ function searchSlots(chatId, otp) {
                     token: token
                 }).then(function(response) {
                     console.log(response);
-                    utilMethods.sendCaptcha(chatId, token);
                 });
             })
         }
