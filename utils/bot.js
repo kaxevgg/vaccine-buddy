@@ -503,7 +503,7 @@ function sendErrorMessage (chatId, errorMessage, callback) {
 }
 
 function sendUnauthorizedMessage(chatId) {
-    bot.sendMessage(chatId, "You do not have access to this bot. Kindly send your Telegram username to Arpit Bansal (@arpitbansal3) to get access.")
+    bot.sendMessage(chatId, "You do not have access to this bot. Kindly reach out to Arpit Bansal (@arpitbansal3) to get access.")
     .then(function(response) {
         console.log(response);
     }).catch(function(error) {
