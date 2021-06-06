@@ -88,7 +88,7 @@ bot.on("message", function(message) {
       } else {
           // doc.data() will be undefined in this case
           console.log("No such document!");
-          allowedUsers.doc().add({
+          allowedUsers.add({
             chatId: chatId,
             username: message.from.username,
             approved: false
