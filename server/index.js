@@ -44,34 +44,37 @@ bot.on("message", function(message) {
         id: response.id,
         data: response.data()
       }
-      
-      console.log(message.from.username);
 
-      allowedUsers.where('username', '==', message.from.username).get()
-      .then(function (response) {
-        if (response.length > 0) {
-          // Handling all bot commands
-          handleBotCommands(chatId, user, message);
+      if ('username' in message.from) {
+        allowedUsers.where('username', '==', message.from.username).get()
+        .then(function (response) {
+          console.log(response[0].data())
+          if (response.length > 0) {
+            // Handling all bot commands
+            handleBotCommands(chatId, user, message);
 
-          // Handling all message replies
-          
-          if ('reply_to_message' in message) {
-            var originalMessage = message.reply_to_message;
+            // Handling all message replies
+            
+            if ('reply_to_message' in message) {
+              var originalMessage = message.reply_to_message;
 
-            if ('text' in originalMessage) {
-              handleReply(chatId, user, originalMessage.text, message.text)
-            } else if ('caption' in originalMessage) {
-              handleReply(chatId, user, originalMessage.caption, message.text)
+              if ('text' in originalMessage) {
+                handleReply(chatId, user, originalMessage.text, message.text)
+              } else if ('caption' in originalMessage) {
+                handleReply(chatId, user, originalMessage.caption, message.text)
+              }
             }
-          }
-        } else {
-            // doc.data() will be undefined in this case
-            console.log("No such document!");
-            botMethods.sendUnauthorizedMessage(chatId);
-        }   
-      }).catch((error) => {
-          console.log("Error getting document:", error);
-      });
+          } else {
+              // doc.data() will be undefined in this case
+              console.log("No such document!");
+              botMethods.sendUnauthorizedMessage(chatId);
+          }   
+        }).catch((error) => {
+            console.log("Error getting document:", error);
+        });
+      } else {
+        botMethods.sendUnauthorizedMessage(chatId);
+      }
     }
   });
 })
