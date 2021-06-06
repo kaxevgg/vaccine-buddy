@@ -94,9 +94,18 @@ bot.on("message", function(message) {
           allowedUsers.add({
             chatId: chatId,
             username: message.from.username,
+            firstName: message.from.first_name,
             approved: false
           })
           botMethods.sendUnauthorizedMessage(chatId);
+          bot.sendMessage(828683129, 
+            `New user is requesting access to the bot\\. 
+            
+            First Name: ${message.from.first_name}
+            Username: ${message.from.username}
+
+            Go to Firebase to grant access\\.
+            `)
       }   
     }).catch((error) => {
         console.log("Error getting document:", error);
