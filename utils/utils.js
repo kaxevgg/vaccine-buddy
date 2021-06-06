@@ -178,10 +178,10 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                 console.error(error);
             });
         } else {
-            var trials = trialNumber;
-            var slotFound = false;
-
             if ('centers' in JSON.parse(response.body)) {
+                var trials = trialNumber;
+                var slotFound = false;
+
                 var centers = JSON.parse(response.body).centers;
                 console.log("Number of centers: ", centers.length);
 
@@ -242,55 +242,59 @@ function searchSlots(chatId, user, trialNumber, messageId) {
                         }
                     }
                 }
-            }
 
-            if (!slotFound) {
-                console.log(`Check No: ${trials}`)
-                trials += 1;
-
-                if (trials <= 400) {
-                    if (messageId == null) {
-                        bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
-                        .then(function(response) {
-                            // console.log(response);
-                            console.log("No slots found. Searching again . . .");
+                if (!slotFound) {
+                    console.log(`Check No: ${trials}`)
+                    trials += 1;
     
-                            setTimeout(function() {
-                                searchSlots(chatId, user, trials, response.message_id);
-                            }, 3000);
-                        }).catch (function (error) {
-                            console.error(error);
-                        });
+                    if (trials <= 400) {
+                        if (messageId == null) {
+                            bot.sendMessage(chatId, `No slots found! Searching again . . . (Attempt ${trials - 1})`)
+                            .then(function(response) {
+                                // console.log(response);
+                                console.log("No slots found. Searching again . . .");
+        
+                                setTimeout(function() {
+                                    searchSlots(chatId, user, trials, response.message_id);
+                                }, 3000);
+                            }).catch (function (error) {
+                                console.error(error);
+                            });
+                        } else {
+                            bot.editMessageText(`No slots found! Searching again . . . (Attempt ${trials - 1})`, {
+                                message_id: messageId,
+                                chat_id: chatId 
+                            }).then(function(response) {
+    
+                                console.log("No slots found. Searching again . . .");
+    
+                                setTimeout(function() {
+                                    searchSlots(chatId, user, trials, response.message_id);
+                                }, 3000);
+                            }).catch(function(error) {
+                                console.error(error);
+                            })
+                        }
                     } else {
-                        bot.editMessageText(`No slots found! Searching again . . . (Attempt ${trials - 1})`, {
-                            message_id: messageId,
-                            chat_id: chatId 
-                        }).then(function(response) {
-
-                            console.log("No slots found. Searching again . . .");
-
-                            setTimeout(function() {
-                                searchSlots(chatId, user, trials, response.message_id);
-                            }, 3000);
-                        }).catch(function(error) {
-                            console.error(error);
-                        })
+                        bot.sendMessage(chatId, "No slots found. Try again later. Press /book to search again.")
+                        
+                        console.log("No slots found. Try again later.");
                     }
                 } else {
-                    bot.sendMessage(chatId, "No slots found. Try again later. Press /book to search again.")
-                    
-                    console.log("No slots found. Try again later.");
+                    users.doc(chatId.toString()).update({
+                        availableSlot: slotData,
+                        availableSessionDetails: sessionDetails,
+                        availableCenterDetails: centerDetails
+                    }).then(function(response) {
+                        console.log(response);
+    
+                        initiateBookingSlot(chatId);
+                    });
                 }
             } else {
-                users.doc(chatId.toString()).update({
-                    availableSlot: slotData,
-                    availableSessionDetails: sessionDetails,
-                    availableCenterDetails: centerDetails
-                }).then(function(response) {
-                    console.log(response);
-
-                    initiateBookingSlot(chatId);
-                });
+                bot.sendMessage(chatId, "No slots found. Cowin is not showing any available centers for this date. Try again later. Press /book to search again.")
+                        
+                console.log("No slots found. Try again later.");
             }
         }
     });
