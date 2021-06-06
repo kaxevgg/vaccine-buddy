@@ -5,7 +5,7 @@ module.exports.setupMessages = {
     2\\. *Vaccination Date* \\- _To filter slots by date_
     3\\. *Dose No* \\- _To filer slots by dose number_
     4\\. *Age* \\- _To filter slots by minimum age_
-    5\\. *Cost* \\- _To filter slots by cost of vaccine (Free vs Paid)_
+    5\\. *Cost* \\- _To filter slots by cost of vaccine \\(Free vs Paid\\)_
     6\\. *State* \\- _To filter slots by state_
     7\\. *District* \\- _To filter slots by district_
     8\\. *Vaccines* \\- _To filter by preferred vaccine\\(s\\)_
